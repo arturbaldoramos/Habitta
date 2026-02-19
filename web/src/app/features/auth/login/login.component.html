@@ -1,0 +1,83 @@
+<div class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1 class="auth-title">Habitta</h1>
+        <p class="auth-subtitle">Faça login para continuar</p>
+      </div>
+
+      @if (errorMessage()) {
+        <p-message
+          severity="error"
+          [text]="errorMessage()!"
+          styleClass="w-full mb-4"
+        />
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+        <div class="form-field">
+          <label for="email" class="form-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            pInputText
+            formControlName="email"
+            placeholder="seu@email.com"
+            class="w-full"
+            [class.ng-invalid]="isEmailInvalid"
+            [class.ng-dirty]="emailControl?.touched"
+          />
+          @if (isEmailInvalid) {
+            <small class="form-error">
+              @if (emailControl?.errors?.['required']) {
+                Email é obrigatório
+              } @else if (emailControl?.errors?.['email']) {
+                Email inválido
+              }
+            </small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="password" class="form-label">Senha</label>
+          <p-password
+            id="password"
+            formControlName="password"
+            placeholder="Sua senha"
+            [toggleMask]="true"
+            [feedback]="false"
+            styleClass="w-full"
+            inputStyleClass="w-full"
+            [class.ng-invalid]="isPasswordInvalid"
+            [class.ng-dirty]="passwordControl?.touched"
+          />
+          @if (isPasswordInvalid) {
+            <small class="form-error">
+              @if (passwordControl?.errors?.['required']) {
+                Senha é obrigatória
+              } @else if (passwordControl?.errors?.['minlength']) {
+                Senha deve ter no mínimo 6 caracteres
+              }
+            </small>
+          }
+        </div>
+
+        <p-button
+          type="submit"
+          label="Entrar"
+          [loading]="loading()"
+          [disabled]="loading()"
+          styleClass="w-full mt-4"
+          severity="primary"
+        />
+      </form>
+
+      <div class="auth-footer">
+        <p class="text-center text-sm text-gray-600">
+          Não tem uma conta?
+          <a routerLink="/register" class="auth-link">Cadastre-se</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

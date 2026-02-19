@@ -1,0 +1,10 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.form-error {
+  display: block;
+  color: #ef4444;
+  margin-top: 0.25rem;
+}

@@ -1,0 +1,165 @@
+<div class="unit-form-page">
+  <div class="header-section">
+    <h1 class="page-title">
+      {{ isEditMode() ? 'Editar Unidade' : 'Nova Unidade' }}
+    </h1>
+  </div>
+
+  <p-card>
+    @if (errorMessage()) {
+      <p-message
+        severity="error"
+        [text]="errorMessage()!"
+        styleClass="w-full mb-4"
+      />
+    }
+
+    <form [formGroup]="unitForm" (ngSubmit)="onSubmit()" class="form-grid">
+      <!-- Number -->
+      <div class="form-field">
+        <label for="number" class="form-label">Número *</label>
+        <input
+          id="number"
+          type="text"
+          pInputText
+          formControlName="number"
+          placeholder="Ex: 101, 201A"
+          class="w-full"
+          [class.ng-invalid]="isFieldInvalid('number')"
+          [class.ng-dirty]="getControl('number')?.touched"
+        />
+        @if (isFieldInvalid('number')) {
+          <small class="form-error">Número da unidade é obrigatório</small>
+        }
+      </div>
+
+      <!-- Block -->
+      <div class="form-field">
+        <label for="block" class="form-label">Bloco</label>
+        <input
+          id="block"
+          type="text"
+          pInputText
+          formControlName="block"
+          placeholder="Ex: A, B, Torre 1"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Floor -->
+      <div class="form-field">
+        <label for="floor" class="form-label">Andar</label>
+        <p-inputNumber
+          inputId="floor"
+          formControlName="floor"
+          placeholder="Número do andar"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+        />
+      </div>
+
+      <!-- Area -->
+      <div class="form-field">
+        <label for="area" class="form-label">Área (m²)</label>
+        <p-inputNumber
+          inputId="area"
+          formControlName="area"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          placeholder="Área em metros quadrados"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+        />
+      </div>
+
+      <!-- Owner Name -->
+      <div class="form-field">
+        <label for="owner_name" class="form-label">Nome do Proprietário</label>
+        <input
+          id="owner_name"
+          type="text"
+          pInputText
+          formControlName="owner_name"
+          placeholder="Nome completo do proprietário"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Owner Email -->
+      <div class="form-field">
+        <label for="owner_email" class="form-label">Email do Proprietário</label>
+        <input
+          id="owner_email"
+          type="email"
+          pInputText
+          formControlName="owner_email"
+          placeholder="email@exemplo.com"
+          class="w-full"
+          [class.ng-invalid]="isFieldInvalid('owner_email')"
+          [class.ng-dirty]="getControl('owner_email')?.touched"
+        />
+        @if (isFieldInvalid('owner_email')) {
+          <small class="form-error">Email inválido</small>
+        }
+      </div>
+
+      <!-- Owner Phone -->
+      <div class="form-field col-span-full">
+        <label for="owner_phone" class="form-label">Telefone do Proprietário</label>
+        <input
+          id="owner_phone"
+          type="text"
+          pInputText
+          formControlName="owner_phone"
+          placeholder="(00) 00000-0000"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Occupied -->
+      <div class="form-field">
+        <div class="flex align-items-center">
+          <p-checkbox
+            formControlName="occupied"
+            [binary]="true"
+            inputId="occupied"
+          />
+          <label for="occupied" class="ml-2 cursor-pointer">Unidade Ocupada</label>
+        </div>
+      </div>
+
+      <!-- Active (only in edit mode) -->
+      @if (isEditMode()) {
+        <div class="form-field">
+          <div class="flex align-items-center">
+            <p-checkbox
+              formControlName="active"
+              [binary]="true"
+              inputId="active"
+            />
+            <label for="active" class="ml-2 cursor-pointer">Unidade Ativa</label>
+          </div>
+        </div>
+      }
+
+      <!-- Form Actions -->
+      <div class="form-actions col-span-full">
+        <p-button
+          label="Cancelar"
+          severity="secondary"
+          [outlined]="true"
+          (click)="cancel()"
+          [disabled]="loading()"
+        />
+        <p-button
+          type="submit"
+          [label]="isEditMode() ? 'Atualizar' : 'Criar'"
+          [loading]="loading()"
+          [disabled]="loading()"
+        />
+      </div>
+    </form>
+  </p-card>
+
+  <p-toast />
+</div>

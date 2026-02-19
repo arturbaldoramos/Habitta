@@ -1,0 +1,102 @@
+<div class="dashboard">
+  <!-- Welcome Section -->
+  <div class="welcome-section">
+    <h1 class="welcome-title">
+      {{ getGreeting() }}, {{ currentUser()?.name }}!
+    </h1>
+    <p class="welcome-subtitle">
+      Bem-vindo ao Habitta - Sistema de Gestão de Condomínios
+    </p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    @if (loading()) {
+      @for (card of [1, 2, 3, 4]; track card) {
+        <p-card styleClass="dashboard-card">
+          <p-skeleton width="100%" height="6rem" />
+        </p-card>
+      }
+    } @else {
+      @for (card of cards(); track card.title) {
+        <p-card styleClass="dashboard-card">
+          <div class="card-content">
+            <div class="card-icon-wrapper" [style.background-color]="card.bgColor">
+              <i [class]="card.icon" [style.color]="card.color"></i>
+            </div>
+            <div class="card-info">
+              <p class="card-title">{{ card.title }}</p>
+              <p class="card-value">{{ card.value }}</p>
+            </div>
+          </div>
+        </p-card>
+      }
+    }
+  </div>
+
+  <!-- Quick Actions -->
+  @if (isAdminOrSindico()) {
+    <div class="quick-actions">
+      <h2 class="section-title">Ações Rápidas</h2>
+      <div class="actions-grid">
+        <p-card styleClass="action-card">
+          <div class="action-content">
+            <i class="pi pi-user-plus action-icon"></i>
+            <h3 class="action-title">Novo Usuário</h3>
+            <p class="action-description">Adicionar novo usuário ao sistema</p>
+            <p-button
+              label="Adicionar"
+              icon="pi pi-plus"
+              styleClass="w-full mt-3"
+              routerLink="/users/new"
+            />
+          </div>
+        </p-card>
+
+        <p-card styleClass="action-card">
+          <div class="action-content">
+            <i class="pi pi-building action-icon"></i>
+            <h3 class="action-title">Nova Unidade</h3>
+            <p class="action-description">Cadastrar nova unidade</p>
+            <p-button
+              label="Cadastrar"
+              icon="pi pi-plus"
+              styleClass="w-full mt-3"
+              routerLink="/units/new"
+            />
+          </div>
+        </p-card>
+
+        <p-card styleClass="action-card">
+          <div class="action-content">
+            <i class="pi pi-users action-icon"></i>
+            <h3 class="action-title">Gerenciar Usuários</h3>
+            <p class="action-description">Visualizar e editar usuários</p>
+            <p-button
+              label="Ver Todos"
+              icon="pi pi-list"
+              styleClass="w-full mt-3"
+              severity="secondary"
+              routerLink="/users"
+            />
+          </div>
+        </p-card>
+
+        <p-card styleClass="action-card">
+          <div class="action-content">
+            <i class="pi pi-th-large action-icon"></i>
+            <h3 class="action-title">Gerenciar Unidades</h3>
+            <p class="action-description">Visualizar e editar unidades</p>
+            <p-button
+              label="Ver Todas"
+              icon="pi pi-list"
+              styleClass="w-full mt-3"
+              severity="secondary"
+              routerLink="/units"
+            />
+          </div>
+        </p-card>
+      </div>
+    </div>
+  }
+</div>

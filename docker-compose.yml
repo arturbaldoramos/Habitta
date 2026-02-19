@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  habitta-db:
+    image: postgres:16-alpine
+    container_name: habitta-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: habitta
+      POSTGRES_PASSWORD: habitta123
+      POSTGRES_DB: habitta_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - habitta-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habitta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (Go)
+  habitta-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: habitta-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Server
+      PORT: 8080
+      ENV: production
+
+      # Database
+      DATABASE_HOST: habitta-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: habitta
+      DATABASE_PASSWORD: habitta123
+      DATABASE_NAME: habitta_db
+      DATABASE_SSL_MODE: disable
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-habitta-production-secret-change-me-in-production}
+      JWT_EXPIRATION_HOURS: 24
+
+      # CORS
+      ALLOWED_ORIGINS: http://localhost,http://localhost:80,http://localhost:4200
+    depends_on:
+      habitta-db:
+        condition: service_healthy
+    networks:
+      - habitta-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (Angular + Nginx)
+  habitta-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: habitta-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - habitta-api
+    networks:
+      - habitta-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  habitta-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

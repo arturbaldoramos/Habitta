@@ -1,0 +1,100 @@
+<div class="unit-list">
+  <div class="header-section">
+    <h1 class="page-title">Unidades</h1>
+    <p-button
+      label="Nova Unidade"
+      icon="pi pi-plus"
+      (click)="createUnit()"
+    />
+  </div>
+
+  <div class="filters-section">
+    <span class="p-input-icon-left w-full md:w-auto">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        pInputText
+        placeholder="Buscar unidades..."
+        (input)="onSearch($event)"
+        class="w-full md:w-80"
+      />
+    </span>
+  </div>
+
+  <p-table
+    [value]="units()"
+    [loading]="loading()"
+    [paginator]="true"
+    [rows]="rowsPerPage"
+    [totalRecords]="totalRecords()"
+    [lazy]="true"
+    (onLazyLoad)="onPageChange($event)"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    styleClass="p-datatable-striped"
+    [tableStyle]="{ 'min-width': '50rem' }"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Número</th>
+        <th>Bloco</th>
+        <th>Andar</th>
+        <th>Área</th>
+        <th>Proprietário</th>
+        <th>Ocupação</th>
+        <th>Status</th>
+        <th style="width: 150px">Ações</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-unit>
+      <tr>
+        <td>{{ unit.number }}</td>
+        <td>{{ unit.block || '-' }}</td>
+        <td>{{ unit.floor || '-' }}</td>
+        <td>{{ formatArea(unit.area) }}</td>
+        <td>{{ unit.owner_name || '-' }}</td>
+        <td>
+          <p-tag
+            [value]="getOccupiedLabel(unit.occupied)"
+            [severity]="getOccupiedSeverity(unit.occupied)"
+          />
+        </td>
+        <td>
+          <p-tag
+            [value]="getStatusLabel(unit.active)"
+            [severity]="getStatusSeverity(unit.active)"
+          />
+        </td>
+        <td>
+          <div class="action-buttons">
+            <p-button
+              icon="pi pi-pencil"
+              [rounded]="true"
+              [text]="true"
+              severity="info"
+              (click)="editUnit(unit)"
+              pTooltip="Editar"
+              tooltipPosition="top"
+            />
+            <p-button
+              icon="pi pi-trash"
+              [rounded]="true"
+              [text]="true"
+              severity="danger"
+              (click)="deleteUnit(unit)"
+              pTooltip="Excluir"
+              tooltipPosition="top"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="8" class="text-center">Nenhuma unidade encontrada</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-confirmDialog />
+  <p-toast />
+</div>

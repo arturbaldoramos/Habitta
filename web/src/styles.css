@@ -1,3 +1,220 @@
-/* You can add global styles to this file, and also import other style files */
-
+/* Tailwind CSS */
 @import "tailwindcss";
+
+/* PrimeIcons */
+@import "primeicons/primeicons.css";
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  @apply bg-gray-50;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Card Styles */
+.card {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+}
+
+.card-title {
+  @apply text-2xl font-semibold text-gray-800 mb-4;
+}
+
+/* Button Override - Integrate PrimeNG with Tailwind */
+.p-button {
+  @apply transition-all duration-200;
+}
+
+/* Form Styles */
+.form-field {
+  @apply mb-4;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-2;
+}
+
+.form-error {
+  @apply text-sm text-red-600 mt-1;
+}
+
+/* Page Container */
+.page-container {
+  @apply container mx-auto px-4 py-6;
+}
+
+.page-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.page-title {
+  @apply text-3xl font-bold text-gray-900;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
+}
+
+/* Toast Override */
+.p-toast {
+  @apply z-50;
+}
+
+/* DataTable Custom Styles */
+.p-datatable {
+  @apply shadow-sm;
+}
+
+.p-datatable .p-datatable-header {
+  @apply bg-gray-50 border-gray-200;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  @apply hover:bg-gray-50 transition-colors;
+}
+
+/* Dialog Custom Styles */
+.p-dialog {
+  @apply shadow-xl;
+}
+
+.p-dialog .p-dialog-header {
+  @apply bg-gray-50 border-b border-gray-200;
+}
+
+/* Sidebar Custom Styles */
+.sidebar {
+  @apply h-screen bg-white border-r border-gray-200 shadow-sm;
+}
+
+.sidebar-header {
+  @apply p-6 border-b border-gray-200;
+}
+
+.sidebar-menu {
+  @apply p-4;
+}
+
+.sidebar-menu-item {
+  @apply flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all cursor-pointer;
+}
+
+.sidebar-menu-item.active {
+  @apply bg-blue-100 text-blue-600 font-medium;
+}
+
+/* Header Styles */
+.app-header {
+  @apply bg-white border-b border-gray-200 shadow-sm;
+}
+
+/* Auth Pages */
+.auth-container {
+  @apply min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4;
+}
+
+.auth-card {
+  @apply bg-white rounded-xl shadow-xl p-8 w-full max-w-md;
+}
+
+.auth-logo {
+  @apply text-center mb-8;
+}
+
+.auth-title {
+  @apply text-3xl font-bold text-gray-900 text-center mb-2;
+}
+
+.auth-subtitle {
+  @apply text-gray-600 text-center mb-6;
+}
+
+/* Status Badges */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-danger {
+  @apply bg-red-100 text-red-800;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-info {
+  @apply bg-blue-100 text-blue-800;
+}
+
+/* Utility Classes */
+.text-muted {
+  @apply text-gray-500;
+}
+
+.divider {
+  @apply border-t border-gray-200 my-6;
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-container {
+    @apply px-3 py-4;
+  }
+
+  .card {
+    @apply p-4;
+  }
+
+  .auth-card {
+    @apply p-6;
+  }
+}

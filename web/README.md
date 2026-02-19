@@ -1,58 +1,217 @@
-# Web
+# Habitta Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.3.
+Frontend da aplicação Habitta - Sistema de Gestão de Condomínios.
 
-## Development server
+## 🛠️ Stack Tecnológico
 
-To start a local development server, run:
+- **Angular 21** - Framework principal
+- **TypeScript** - Linguagem de programação
+- **TailwindCSS** - Framework CSS utilitário
+- **PrimeNG** - Biblioteca de componentes UI
+- **RxJS** - Programação reativa
+- **Angular Signals** - Gerenciamento de estado reativo
 
-```bash
-ng serve
+## 📁 Estrutura de Pastas
+
+```
+src/app/
+├── core/                       # Módulo principal com serviços e modelos
+│   ├── guards/                 # Guards de rota (auth, role)
+│   ├── interceptors/           # HTTP interceptors (JWT)
+│   ├── models/                 # Interfaces e tipos TypeScript
+│   └── services/               # Serviços da aplicação
+│
+├── features/                   # Módulos de funcionalidades
+│   ├── auth/                   # Autenticação (login, register)
+│   ├── dashboard/              # Dashboard principal
+│   ├── users/                  # CRUD de usuários
+│   └── units/                  # CRUD de unidades
+│
+└── shared/                     # Componentes e recursos compartilhados
+    ├── components/             # Componentes reutilizáveis
+    └── layouts/                # Layouts da aplicação
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## 🚀 Como Rodar
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Desenvolvimento
 
 ```bash
-ng generate component component-name
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+A aplicação estará disponível em `http://localhost:4200`
+
+### Build de Produção
 
 ```bash
-ng generate --help
+npm run build
 ```
 
-## Building
+Os arquivos de build estarão em `dist/`
 
-To build the project run:
+### Docker
 
 ```bash
-ng build
+# Na raiz do projeto
+docker-compose up web
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## 🔐 Autenticação
 
-## Running unit tests
+O sistema utiliza JWT (JSON Web Tokens) para autenticação:
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+1. O usuário faz login através do endpoint `/api/auth/login`
+2. O backend retorna um token JWT e os dados do usuário
+3. O token é armazenado no `localStorage`
+4. O `authInterceptor` adiciona automaticamente o token em todas as requisições
+5. Em caso de erro 401, o usuário é deslogado automaticamente
 
-```bash
-ng test
+### Guards de Rota
+
+- **authGuard**: Protege rotas que requerem autenticação
+- **guestGuard**: Redireciona usuários autenticados (ex: página de login)
+- **roleGuard**: Protege rotas por perfil de usuário (admin, sindico, morador)
+
+## 👥 Perfis de Usuário
+
+- **Admin**: Acesso total ao sistema
+- **Síndico**: Gerenciamento de usuários e unidades
+- **Morador**: Acesso limitado às suas informações
+
+## 📱 Componentes Principais
+
+### AuthService
+Gerencia autenticação, login, logout e estado do usuário usando Signals.
+
+```typescript
+readonly isAuthenticated = computed(() => !!this.token() && !!this.user());
+readonly currentUser = this.userSignal.asReadonly();
 ```
 
-## Running end-to-end tests
+### UserService
+CRUD completo de usuários com paginação e busca.
 
-For end-to-end (e2e) testing, run:
+### UnitService
+CRUD completo de unidades com paginação e busca.
 
-```bash
-ng e2e
+## 🎨 Estilização
+
+### TailwindCSS
+Utilitários CSS para estilização rápida:
+
+```html
+<div class="flex items-center justify-between p-4 bg-white rounded-lg shadow">
+  ...
+</div>
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### PrimeNG
+Componentes prontos com tema Lara Light Blue:
+
+- Tables (p-table)
+- Forms (p-inputText, p-dropdown, p-password)
+- Dialogs (p-confirmDialog, p-message)
+- Buttons (p-button)
+- Cards (p-card)
+- E mais...
+
+## 🛣️ Rotas
+
+### Públicas
+- `/login` - Página de login
+- `/register` - Página de registro
+
+### Privadas (requerem autenticação)
+- `/dashboard` - Dashboard principal
+- `/users` - Lista de usuários (admin/sindico)
+- `/users/new` - Criar usuário (admin/sindico)
+- `/users/edit/:id` - Editar usuário (admin/sindico)
+- `/units` - Lista de unidades (admin/sindico)
+- `/units/new` - Criar unidade (admin/sindico)
+- `/units/edit/:id` - Editar unidade (admin/sindico)
+- `/unauthorized` - Página de acesso negado
+
+## 🔧 Configuração
+
+### API Base URL
+
+Por padrão, o frontend aponta para `http://localhost:8080/api`.
+
+Para alterar, edite os serviços em `src/app/core/services/`:
+
+```typescript
+private readonly API_URL = 'http://localhost:8080/api';
+```
+
+### Temas PrimeNG
+
+O tema atual é Lara Light Blue. Para trocar, edite `src/styles.css`:
+
+```css
+@import 'primeng/resources/themes/lara-light-blue/theme.css';
+```
+
+Temas disponíveis: https://primeng.org/theming
+
+## 📦 Build e Deploy
+
+### Variáveis de Ambiente
+
+Crie um arquivo `environment.ts` para diferentes ambientes:
+
+```typescript
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:8080/api'
+};
+```
+
+### Docker
+
+O Dockerfile utiliza multi-stage build:
+
+1. **Builder**: Compila a aplicação Angular
+2. **Runtime**: Serve os arquivos estáticos com Nginx
+
+Configurações do Nginx:
+
+- Gzip habilitado
+- Cache para assets estáticos
+- Proxy reverso para `/api/*` → backend
+- Suporte para SPA routing
+
+## 🐛 Debug
+
+### Angular DevTools
+
+Instale a extensão Angular DevTools no Chrome para debug de componentes, signals e performance.
+
+### Logs
+
+Para debug do AuthService e interceptors, verifique o console do navegador.
+
+## 📝 Convenções de Código
+
+- Componentes standalone (sem NgModules)
+- Signals para estado reativo
+- Computed para estado derivado
+- Formulários reativos (ReactiveFormsModule)
+- Lazy loading de rotas
+- ChangeDetectionStrategy.OnPush
+- Control flow nativo do Angular (@if, @for, @switch)
+
+## 🔄 Próximos Passos
+
+- [ ] Implementar testes unitários (Vitest)
+- [ ] Implementar testes E2E
+- [ ] Adicionar PWA support
+- [ ] Implementar i18n (internacionalização)
+- [ ] Adicionar tema dark mode
+- [ ] Implementar notificações em tempo real (WebSockets)
+- [ ] Adicionar upload de arquivos/imagens
+- [ ] Implementar relatórios e gráficos
 
 ## Additional Resources
 

@@ -1,0 +1,71 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.unauthorized-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.unauthorized-container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.unauthorized-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.unauthorized-icon {
+  font-size: 5rem;
+  color: #ef4444;
+  margin-bottom: 1.5rem;
+}
+
+.unauthorized-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+}
+
+.unauthorized-message {
+  font-size: 1.125rem;
+  color: #475569;
+  margin: 0 0 1rem 0;
+}
+
+.unauthorized-description {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+}
+
+.unauthorized-actions {
+  width: 100%;
+  max-width: 300px;
+}
+
+@media (max-width: 768px) {
+  .unauthorized-icon {
+    font-size: 4rem;
+  }
+
+  .unauthorized-title {
+    font-size: 1.5rem;
+  }
+
+  .unauthorized-message {
+    font-size: 1rem;
+  }
+}

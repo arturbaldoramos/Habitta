@@ -1,0 +1,192 @@
+<div class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1 class="auth-title">Habitta</h1>
+        <p class="auth-subtitle">Crie sua conta</p>
+      </div>
+
+      @if (errorMessage()) {
+        <p-message
+          severity="error"
+          [text]="errorMessage()!"
+          styleClass="w-full mb-4"
+        />
+      }
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+        <!-- Tenant ID (temporary - in production this would be hidden or determined differently) -->
+        <div class="form-field">
+          <label for="tenant_id" class="form-label">ID do Condomínio</label>
+          <input
+            id="tenant_id"
+            type="number"
+            pInputText
+            formControlName="tenant_id"
+            placeholder="1"
+            class="w-full"
+            [class.ng-invalid]="isFieldInvalid('tenant_id')"
+            [class.ng-dirty]="getControl('tenant_id')?.touched"
+          />
+          @if (isFieldInvalid('tenant_id')) {
+            <small class="form-error">ID do condomínio é obrigatório</small>
+          }
+        </div>
+
+        <!-- Name -->
+        <div class="form-field">
+          <label for="name" class="form-label">Nome Completo *</label>
+          <input
+            id="name"
+            type="text"
+            pInputText
+            formControlName="name"
+            placeholder="Seu nome completo"
+            class="w-full"
+            [class.ng-invalid]="isFieldInvalid('name')"
+            [class.ng-dirty]="getControl('name')?.touched"
+          />
+          @if (isFieldInvalid('name')) {
+            <small class="form-error">
+              @if (getControl('name')?.errors?.['required']) {
+                Nome é obrigatório
+              } @else if (getControl('name')?.errors?.['minlength']) {
+                Nome deve ter no mínimo 3 caracteres
+              }
+            </small>
+          }
+        </div>
+
+        <!-- Email -->
+        <div class="form-field">
+          <label for="email" class="form-label">Email *</label>
+          <input
+            id="email"
+            type="email"
+            pInputText
+            formControlName="email"
+            placeholder="seu@email.com"
+            class="w-full"
+            [class.ng-invalid]="isFieldInvalid('email')"
+            [class.ng-dirty]="getControl('email')?.touched"
+          />
+          @if (isFieldInvalid('email')) {
+            <small class="form-error">
+              @if (getControl('email')?.errors?.['required']) {
+                Email é obrigatório
+              } @else if (getControl('email')?.errors?.['email']) {
+                Email inválido
+              }
+            </small>
+          }
+        </div>
+
+        <!-- Password -->
+        <div class="form-field">
+          <label for="password" class="form-label">Senha *</label>
+          <p-password
+            id="password"
+            formControlName="password"
+            placeholder="Mínimo 6 caracteres"
+            [toggleMask]="true"
+            [feedback]="true"
+            styleClass="w-full"
+            inputStyleClass="w-full"
+            [class.ng-invalid]="isFieldInvalid('password')"
+            [class.ng-dirty]="getControl('password')?.touched"
+          />
+          @if (isFieldInvalid('password')) {
+            <small class="form-error">
+              @if (getControl('password')?.errors?.['required']) {
+                Senha é obrigatória
+              } @else if (getControl('password')?.errors?.['minlength']) {
+                Senha deve ter no mínimo 6 caracteres
+              }
+            </small>
+          }
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-field">
+          <label for="confirmPassword" class="form-label">Confirmar Senha *</label>
+          <p-password
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            placeholder="Repita sua senha"
+            [toggleMask]="true"
+            [feedback]="false"
+            styleClass="w-full"
+            inputStyleClass="w-full"
+            [class.ng-invalid]="isFieldInvalid('confirmPassword') || passwordMismatch"
+            [class.ng-dirty]="getControl('confirmPassword')?.touched"
+          />
+          @if (isFieldInvalid('confirmPassword')) {
+            <small class="form-error">Confirmação de senha é obrigatória</small>
+          }
+          @if (passwordMismatch) {
+            <small class="form-error">As senhas não coincidem</small>
+          }
+        </div>
+
+        <!-- Role -->
+        <div class="form-field">
+          <label for="role" class="form-label">Perfil *</label>
+          <p-select
+            id="role"
+            formControlName="role"
+            [options]="roleOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecione seu perfil"
+            styleClass="w-full"
+            [class.ng-invalid]="isFieldInvalid('role')"
+            [class.ng-dirty]="getControl('role')?.touched"
+          />
+          @if (isFieldInvalid('role')) {
+            <small class="form-error">Perfil é obrigatório</small>
+          }
+        </div>
+
+        <!-- Phone (optional) -->
+        <div class="form-field">
+          <label for="phone" class="form-label">Telefone</label>
+          <p-inputMask
+            id="phone"
+            formControlName="phone"
+            mask="(99) 99999-9999"
+            placeholder="(00) 00000-0000"
+            styleClass="w-full"
+          />
+        </div>
+
+        <!-- CPF (optional) -->
+        <div class="form-field">
+          <label for="cpf" class="form-label">CPF</label>
+          <p-inputMask
+            id="cpf"
+            formControlName="cpf"
+            mask="999.999.999-99"
+            placeholder="000.000.000-00"
+            styleClass="w-full"
+          />
+        </div>
+
+        <p-button
+          type="submit"
+          label="Criar Conta"
+          [loading]="loading()"
+          [disabled]="loading()"
+          styleClass="w-full mt-4"
+          severity="primary"
+        />
+      </form>
+
+      <div class="auth-footer">
+        <p class="text-center text-sm text-gray-600">
+          Já tem uma conta?
+          <a routerLink="/login" class="auth-link">Faça login</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
