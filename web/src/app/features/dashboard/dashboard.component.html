@@ -5,28 +5,28 @@
       {{ getGreeting() }}, {{ currentUser()?.name }}!
     </h1>
     <p class="welcome-subtitle">
-      Bem-vindo ao Habitta - Sistema de Gestão de Condomínios
+      Aqui está um resumo do seu condomínio.
     </p>
   </div>
 
   <!-- Stats Cards -->
   <div class="stats-grid">
     @if (loading()) {
-      @for (card of [1, 2, 3, 4]; track card) {
-        <p-card styleClass="dashboard-card">
-          <p-skeleton width="100%" height="6rem" />
+      @for (item of [1, 2, 3, 4]; track item) {
+        <p-card styleClass="stat-card">
+          <p-skeleton width="100%" height="5rem" />
         </p-card>
       }
     } @else {
       @for (card of cards(); track card.title) {
-        <p-card styleClass="dashboard-card">
-          <div class="card-content">
-            <div class="card-icon-wrapper" [style.background-color]="card.bgColor">
+        <p-card styleClass="stat-card">
+          <div class="stat-card-content">
+            <div class="stat-icon-wrapper" [style.background-color]="card.bgColor">
               <i [class]="card.icon" [style.color]="card.color"></i>
             </div>
-            <div class="card-info">
-              <p class="card-title">{{ card.title }}</p>
-              <p class="card-value">{{ card.value }}</p>
+            <div class="stat-info">
+              <span class="stat-label">{{ card.title }}</span>
+              <span class="stat-value">{{ card.value }}</span>
             </div>
           </div>
         </p-card>
@@ -34,69 +34,84 @@
     }
   </div>
 
-  <!-- Quick Actions -->
-  @if (isAdminOrSindico()) {
-    <div class="quick-actions">
-      <h2 class="section-title">Ações Rápidas</h2>
-      <div class="actions-grid">
-        <p-card styleClass="action-card">
-          <div class="action-content">
-            <i class="pi pi-user-plus action-icon"></i>
-            <h3 class="action-title">Novo Usuário</h3>
-            <p class="action-description">Adicionar novo usuário ao sistema</p>
+  <!-- Bottom Section: Activity Feed + Quick Actions -->
+  <div class="bottom-section">
+    <!-- Recent Activity -->
+    <div class="activity-section">
+      <p-card>
+        <ng-template #header>
+          <div class="section-header">
+            <h2 class="section-title">Atividade Recente</h2>
+          </div>
+        </ng-template>
+        @if (loading()) {
+          @for (item of [1, 2, 3]; track item) {
+            <div class="activity-skeleton">
+              <p-skeleton shape="circle" size="2.5rem" />
+              <div class="activity-skeleton-text">
+                <p-skeleton width="80%" height="1rem" />
+                <p-skeleton width="40%" height="0.75rem" />
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="activity-timeline">
+            @for (activity of activities(); track $index) {
+              <div class="activity-item">
+                <div class="activity-icon" [style.background-color]="activity.iconBg">
+                  <i [class]="activity.icon" [style.color]="activity.iconColor"></i>
+                </div>
+                <div class="activity-content">
+                  <p class="activity-description">{{ activity.description }}</p>
+                  <span class="activity-time">{{ activity.time }}</span>
+                </div>
+              </div>
+            }
+            @if (activities().length === 0) {
+              <p class="activity-empty">Nenhuma atividade recente.</p>
+            }
+          </div>
+        }
+      </p-card>
+    </div>
+
+    <!-- Quick Actions -->
+    @if (isAdminOrSindico()) {
+      <div class="quick-actions-section">
+        <p-card>
+          <ng-template #header>
+            <div class="section-header">
+              <h2 class="section-title">Ações Rápidas</h2>
+            </div>
+          </ng-template>
+          <div class="quick-actions-list">
             <p-button
-              label="Adicionar"
-              icon="pi pi-plus"
-              styleClass="w-full mt-3"
+              label="Novo Usuário"
+              icon="pi pi-user-plus"
+              severity="secondary"
+              [outlined]="true"
+              styleClass="quick-action-btn"
               routerLink="/users/new"
             />
-          </div>
-        </p-card>
-
-        <p-card styleClass="action-card">
-          <div class="action-content">
-            <i class="pi pi-building action-icon"></i>
-            <h3 class="action-title">Nova Unidade</h3>
-            <p class="action-description">Cadastrar nova unidade</p>
             <p-button
-              label="Cadastrar"
-              icon="pi pi-plus"
-              styleClass="w-full mt-3"
+              label="Novo Convite"
+              icon="pi pi-envelope"
+              severity="secondary"
+              [outlined]="true"
+              styleClass="quick-action-btn"
+              routerLink="/invites"
+            />
+            <p-button
+              label="Nova Unidade"
+              icon="pi pi-building"
+              severity="secondary"
+              [outlined]="true"
+              styleClass="quick-action-btn"
               routerLink="/units/new"
             />
           </div>
         </p-card>
-
-        <p-card styleClass="action-card">
-          <div class="action-content">
-            <i class="pi pi-users action-icon"></i>
-            <h3 class="action-title">Gerenciar Usuários</h3>
-            <p class="action-description">Visualizar e editar usuários</p>
-            <p-button
-              label="Ver Todos"
-              icon="pi pi-list"
-              styleClass="w-full mt-3"
-              severity="secondary"
-              routerLink="/users"
-            />
-          </div>
-        </p-card>
-
-        <p-card styleClass="action-card">
-          <div class="action-content">
-            <i class="pi pi-th-large action-icon"></i>
-            <h3 class="action-title">Gerenciar Unidades</h3>
-            <p class="action-description">Visualizar e editar unidades</p>
-            <p-button
-              label="Ver Todas"
-              icon="pi pi-list"
-              styleClass="w-full mt-3"
-              severity="secondary"
-              routerLink="/units"
-            />
-          </div>
-        </p-card>
       </div>
-    </div>
-  }
+    }
+  </div>
 </div>

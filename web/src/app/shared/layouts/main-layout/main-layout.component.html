@@ -1,57 +1,180 @@
 <div class="main-layout">
-  <!-- Header -->
-  <header class="header">
-    <div class="header-content">
-      <div class="header-left">
-        <button
-          pButton
-          type="button"
-          icon="pi pi-bars"
-          class="p-button-text p-button-rounded"
-          (click)="toggleSidebar()"
-        ></button>
-        <h1 class="header-title">Habitta</h1>
-      </div>
-
-      <div class="header-right">
-        @if (currentUser()) {
-          <div class="user-info">
-            <p-avatar
-              [label]="getUserInitials()"
-              shape="circle"
-              styleClass="bg-primary"
-            />
-            <div class="user-details hidden md:block">
-              <p class="user-name">{{ currentUser()?.name }}</p>
-              <span [class]="getRoleBadgeClass()">{{ getRoleLabel() }}</span>
-            </div>
-          </div>
-        }
-      </div>
+  <!-- Fixed Sidebar (desktop) -->
+  <aside class="sidebar" aria-label="Navegação principal">
+    <div class="sidebar-header">
+      <i class="pi pi-building sidebar-logo"></i>
+      <span class="sidebar-brand">Habitta</span>
     </div>
-  </header>
 
-  <!-- Drawer -->
+    <ng-container *ngTemplateOutlet="sidebarNav" />
+
+    <ng-container *ngTemplateOutlet="sidebarFooter" />
+  </aside>
+
+  <!-- Drawer Sidebar (mobile) -->
   <p-drawer
     [(visible)]="sidebarVisible"
     position="left"
-    styleClass="sidebar-custom"
+    styleClass="sidebar-drawer"
+    [showCloseIcon]="false"
   >
-    <ng-template pTemplate="header">
+    <ng-template #header>
       <div class="sidebar-header">
-        <h2 class="sidebar-title">Menu</h2>
+        <i class="pi pi-building sidebar-logo"></i>
+        <span class="sidebar-brand">Habitta</span>
       </div>
     </ng-template>
 
-    <div class="sidebar-content">
-      <p-menu [model]="menuItems" styleClass="w-full border-none" />
-    </div>
+    <ng-container *ngTemplateOutlet="sidebarNav" />
+
+    <ng-template #footer>
+      <ng-container *ngTemplateOutlet="sidebarFooter" />
+    </ng-template>
   </p-drawer>
 
-  <!-- Main Content -->
-  <main class="main-content">
-    <div class="content-wrapper">
+  <!-- Right side (header + content) -->
+  <div class="main-area">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <p-button
+            icon="pi pi-bars"
+            [text]="true"
+            [rounded]="true"
+            severity="secondary"
+            (onClick)="toggleSidebar()"
+            pTooltip="Menu"
+            tooltipPosition="bottom"
+            ariaLabel="Abrir menu de navegação"
+            styleClass="hamburger-btn"
+          />
+          <div class="header-brand">
+            <i class="pi pi-building header-brand-icon"></i>
+            <h1 class="header-title">Habitta</h1>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <p-button
+            icon="pi pi-bell"
+            [text]="true"
+            [rounded]="true"
+            severity="secondary"
+            pTooltip="Notificações"
+            tooltipPosition="bottom"
+            ariaLabel="Notificações"
+          />
+          @if (isAdminOrSindico()) {
+            <p-button
+              icon="pi pi-plus"
+              [rounded]="true"
+              size="small"
+              pTooltip="Ação Rápida"
+              tooltipPosition="bottom"
+              ariaLabel="Ação rápida"
+            />
+          }
+          @if (currentUser()) {
+            <p-avatar
+              [label]="getUserInitials()"
+              shape="circle"
+              styleClass="header-avatar"
+            />
+          }
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
       <router-outlet />
-    </div>
-  </main>
+    </main>
+  </div>
 </div>
+
+<!-- Shared Templates -->
+<ng-template #sidebarNav>
+  <nav class="sidebar-nav" aria-label="Navegação principal">
+    <ul class="nav-list">
+      <li>
+        <a
+          class="nav-item"
+          routerLink="/dashboard"
+          routerLinkActive="nav-item--active"
+          (click)="closeSidebar()"
+        >
+          <i class="pi pi-objects-column nav-item-icon"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      @if (isAdminOrSindico()) {
+        <li>
+          <a
+            class="nav-item"
+            routerLink="/users"
+            routerLinkActive="nav-item--active"
+            (click)="closeSidebar()"
+          >
+            <i class="pi pi-users nav-item-icon"></i>
+            <span>Usuários</span>
+          </a>
+        </li>
+        <li>
+          <a
+            class="nav-item"
+            routerLink="/units"
+            routerLinkActive="nav-item--active"
+            (click)="closeSidebar()"
+          >
+            <i class="pi pi-building nav-item-icon"></i>
+            <span>Unidades</span>
+          </a>
+        </li>
+        <li>
+          <a
+            class="nav-item"
+            routerLink="/invites"
+            routerLinkActive="nav-item--active"
+            (click)="closeSidebar()"
+          >
+            <i class="pi pi-envelope nav-item-icon"></i>
+            <span>Convites</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+</ng-template>
+
+<ng-template #sidebarFooter>
+  <div class="sidebar-footer">
+    <div class="sidebar-separator"></div>
+    @if (currentUser()) {
+      <div class="sidebar-user">
+        <p-avatar
+          [label]="getUserInitials()"
+          shape="circle"
+          size="large"
+          styleClass="sidebar-user-avatar"
+        />
+        <div class="sidebar-user-info">
+          <span class="sidebar-user-name">{{ currentUser()?.name }}</span>
+          <p-tag
+            [value]="getRoleLabel()"
+            [severity]="getRoleSeverity()"
+            [rounded]="true"
+          />
+        </div>
+      </div>
+    }
+    <p-button
+      label="Sair"
+      icon="pi pi-sign-out"
+      severity="secondary"
+      [text]="true"
+      styleClass="sidebar-logout-btn"
+      (onClick)="logout()"
+    />
+  </div>
+</ng-template>

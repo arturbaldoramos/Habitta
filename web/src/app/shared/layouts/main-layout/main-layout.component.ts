@@ -1,11 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Drawer } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
-import { MenuModule } from 'primeng/menu';
 import { AvatarModule } from 'primeng/avatar';
-import { MenuItem } from 'primeng/api';
+import { Tag } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { AuthService } from '../../../core/services';
 import { UserRole } from '../../../core/models';
 
@@ -16,11 +16,13 @@ import { UserRole } from '../../../core/models';
     RouterModule,
     Drawer,
     ButtonModule,
-    MenuModule,
-    AvatarModule
+    AvatarModule,
+    Tag,
+    TooltipModule
   ],
   templateUrl: './main-layout.component.html',
-  styleUrl: './main-layout.component.css'
+  styleUrl: './main-layout.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MainLayoutComponent {
   private readonly authService = inject(AuthService);
@@ -30,39 +32,6 @@ export class MainLayoutComponent {
   readonly currentUser = this.authService.currentUser;
   readonly userRole = this.authService.activeRole;
 
-  readonly menuItems: MenuItem[] = [
-    {
-      label: 'Dashboard',
-      icon: 'pi pi-home',
-      routerLink: '/dashboard'
-    },
-    {
-      label: 'Usuários',
-      icon: 'pi pi-users',
-      routerLink: '/users',
-      visible: this.isAdminOrSindico()
-    },
-    {
-      label: 'Unidades',
-      icon: 'pi pi-building',
-      routerLink: '/units',
-      visible: this.isAdminOrSindico()
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Perfil',
-      icon: 'pi pi-user',
-      command: () => this.goToProfile()
-    },
-    {
-      label: 'Sair',
-      icon: 'pi pi-sign-out',
-      command: () => this.logout()
-    }
-  ];
-
   toggleSidebar(): void {
     this.sidebarVisible.update(visible => !visible);
   }
@@ -71,12 +40,13 @@ export class MainLayoutComponent {
     this.sidebarVisible.set(false);
   }
 
-  logout(): void {
-    this.authService.logout();
+  navigateTo(route: string): void {
+    this.router.navigate([route]);
+    this.closeSidebar();
   }
 
-  goToProfile(): void {
-    this.router.navigate(['/profile']);
+  logout(): void {
+    this.authService.logout();
     this.closeSidebar();
   }
 
@@ -96,17 +66,17 @@ export class MainLayoutComponent {
     return user.name.substring(0, 2).toUpperCase();
   }
 
-  getRoleBadgeClass(): string {
+  getRoleSeverity(): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
     const role = this.userRole();
     switch (role) {
       case UserRole.ADMIN:
-        return 'role-badge role-admin';
+        return 'warn';
       case UserRole.SINDICO:
-        return 'role-badge role-sindico';
+        return 'info';
       case UserRole.MORADOR:
-        return 'role-badge role-morador';
+        return 'secondary';
       default:
-        return 'role-badge';
+        return 'secondary';
     }
   }
 
