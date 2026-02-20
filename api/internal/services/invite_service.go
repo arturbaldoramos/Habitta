@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/arturbaldoramos/Habitta/internal/models"
@@ -42,6 +43,8 @@ type inviteService struct {
 	userRepo       repositories.UserRepository
 	userTenantRepo repositories.UserTenantRepository
 	db             *gorm.DB
+	emailService   EmailService
+	appBaseURL     string
 }
 
 // NewInviteService creates a new invite service
@@ -50,12 +53,16 @@ func NewInviteService(
 	userRepo repositories.UserRepository,
 	userTenantRepo repositories.UserTenantRepository,
 	db *gorm.DB,
+	emailService EmailService,
+	appBaseURL string,
 ) InviteService {
 	return &inviteService{
 		inviteRepo:     inviteRepo,
 		userRepo:       userRepo,
 		userTenantRepo: userTenantRepo,
 		db:             db,
+		emailService:   emailService,
+		appBaseURL:     appBaseURL,
 	}
 }
 
@@ -75,9 +82,12 @@ func (s *inviteService) CreateInvite(tenantID, inviterUserID uint, req CreateInv
 	}
 
 	// Check if email already belongs to this tenant
-	belongsToTenant, err := s.userTenantRepo.UserBelongsToTenant(inviterUserID, tenantID)
-	if err == nil && belongsToTenant {
-		return nil, errors.New("user already belongs to this tenant")
+	invitedUser, err := s.userRepo.GetByEmail(req.Email)
+	if err == nil && invitedUser != nil {
+		belongsToTenant, err := s.userTenantRepo.UserBelongsToTenant(invitedUser.ID, tenantID)
+		if err == nil && belongsToTenant {
+			return nil, errors.New("user already belongs to this tenant")
+		}
 	}
 
 	// Check if there's already a pending invite for this email and tenant
@@ -111,6 +121,24 @@ func (s *inviteService) CreateInvite(tenantID, inviterUserID uint, req CreateInv
 	invite, err = s.inviteRepo.GetByToken(invite.Token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reload invite: %w", err)
+	}
+
+	// Send invite email (failure does not block invite creation)
+	inviteLink := fmt.Sprintf("%s/invites/%s", s.appBaseURL, invite.Token)
+	emailMsg := EmailMessage{
+		To:      invite.Email,
+		Subject: "Você foi convidado para o Habitta",
+		HTML: fmt.Sprintf(
+			`<h2>Você recebeu um convite!</h2>
+			<p>Você foi convidado para participar de um condomínio no Habitta como <strong>%s</strong>.</p>
+			<p>Clique no link abaixo para aceitar o convite:</p>
+			<p><a href="%s">Aceitar Convite</a></p>
+			<p>Este convite expira em 7 dias.</p>`,
+			invite.Role, inviteLink,
+		),
+	}
+	if err := s.emailService.SendEmail(emailMsg); err != nil {
+		log.Printf("WARNING: failed to send invite email to %s: %v", invite.Email, err)
 	}
 
 	return invite, nil

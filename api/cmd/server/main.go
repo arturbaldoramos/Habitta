@@ -59,9 +59,10 @@ func main() {
 	log.Println("Repositories initialized")
 
 	// Initialize services
+	emailService := services.NewEmailService(cfg)
 	authService := services.NewAuthService(userRepo, userTenantRepo, tenantRepo, cfg)
 	tenantMgmtService := services.NewTenantManagementService(tenantRepo, userTenantRepo, db)
-	inviteService := services.NewInviteService(inviteRepo, userRepo, userTenantRepo, db)
+	inviteService := services.NewInviteService(inviteRepo, userRepo, userTenantRepo, db, emailService, cfg.Email.AppBaseURL)
 	tenantService := services.NewTenantService(tenantRepo)
 	userService := services.NewUserService(userRepo, tenantRepo)
 	unitService := services.NewUnitService(unitRepo, tenantRepo)

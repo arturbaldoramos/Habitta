@@ -14,6 +14,7 @@ API REST multi-tenant construída com Clean Architecture para gestão completa d
 - **Viper** - Gerenciamento de configurações
 - **JWT** - Autenticação stateless
 - **Bcrypt** - Hash de senhas
+- **Resend** - Envio de emails (staging/produção)
 
 ### Arquitetura
 
@@ -81,7 +82,14 @@ JWT_EXPIRATION_HOURS=24
 
 # CORS
 ALLOWED_ORIGINS=http://localhost:4200,http://localhost:3000
+
+# Email (Resend)
+RESEND_API_KEY=re_your_api_key_here
+EMAIL_FROM=noreply@habitta.com
+APP_BASE_URL=http://localhost:4200
 ```
+
+> **Nota:** `RESEND_API_KEY` é obrigatória em ambientes que não sejam `development`. Em `development`, os emails são apenas logados no console.
 
 ### Database Setup
 
@@ -116,7 +124,7 @@ api/
 │   ├── middleware/              # JWT, Tenant, CORS, Logger
 │   ├── models/                  # GORM models
 │   ├── repositories/            # Data access layer
-│   └── services/                # Business logic
+│   └── services/                # Business logic (inclui email_service)
 ├── pkg/
 │   └── utils/                   # Helpers (JWT, bcrypt)
 ├── .env                         # Environment variables
@@ -415,6 +423,83 @@ Authorization: Bearer <token>
 
 ---
 
+### Convites (Invite System)
+
+O sistema de convites permite que síndicos e admins convidem usuários para um tenant. Ao criar um convite, um email é enviado automaticamente com o link de aceite.
+
+#### Criar Convite (Requer síndico ou admin)
+
+```bash
+POST /api/invites
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "email": "novo-morador@example.com",
+  "role": "morador"
+}
+```
+
+Resposta (201 Created):
+```json
+{
+  "data": {
+    "id": 1,
+    "tenant_id": 1,
+    "email": "novo-morador@example.com",
+    "role": "morador",
+    "token": "uuid-token",
+    "status": "pending",
+    "expires_at": "2024-02-14T01:00:00Z"
+  }
+}
+```
+
+#### Consultar Convite por Token (Público)
+
+```bash
+GET /api/invites/:token
+```
+
+#### Aceitar Convite (Público)
+
+```bash
+POST /api/invites/:token/accept
+Content-Type: application/json
+
+{
+  "name": "Novo Morador",
+  "password": "senha123",
+  "phone": "(11) 99999-9999",
+  "cpf": "123.456.789-00"
+}
+```
+
+> **Nota:** `name` e `password` são obrigatórios apenas se o usuário ainda não existir no sistema.
+
+#### Meus Convites Pendentes (Requer autenticação)
+
+```bash
+GET /api/invites/me
+Authorization: Bearer <token>
+```
+
+#### Listar Convites do Tenant (Requer autenticação + tenant)
+
+```bash
+GET /api/tenants/invites
+Authorization: Bearer <token>
+```
+
+#### Cancelar Convite (Requer síndico, admin ou quem criou)
+
+```bash
+DELETE /api/invites/:id
+Authorization: Bearer <token>
+```
+
+---
+
 ## 🔐 Autenticação e Autorização
 
 ### JWT Token
@@ -441,7 +526,7 @@ Authorization: Bearer <token>
 ### Roles
 
 - **`admin`** - Acesso total, incluindo gestão de tenants
-- **`sindico`** - Gestão do condomínio (users, units)
+- **`sindico`** - Gestão do condomínio (users, units, convites)
 - **`morador`** - Acesso básico
 
 ### Multi-Tenancy
@@ -505,14 +590,18 @@ curl -X GET http://localhost:8080/api/users \
 As migrations são executadas automaticamente ao iniciar o servidor. Os seguintes models são criados:
 
 - **tenants** - Condomínios
-- **users** - Usuários (com tenant_id)
+- **users** - Usuários
+- **user_tenants** - Relação many-to-many entre users e tenants (com role)
+- **invites** - Convites para tenants
 - **units** - Unidades (com tenant_id)
 
 Para forçar recriação das tabelas (apenas desenvolvimento):
 
 ```sql
-DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS invites CASCADE;
+DROP TABLE IF EXISTS user_tenants CASCADE;
 DROP TABLE IF EXISTS units CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS tenants CASCADE;
 ```
 
@@ -604,4 +693,4 @@ docs(readme): atualizar exemplos de uso
 
 ## 📄 Licença
 
-Proprietary - Habitta © 2024
+Proprietary - Habitta © 2025

@@ -13,6 +13,14 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	CORS     CORSConfig
+	Email    EmailConfig
+}
+
+// EmailConfig holds email service configuration
+type EmailConfig struct {
+	ResendAPIKey string
+	FromAddress  string
+	AppBaseURL   string
 }
 
 // ServerConfig holds server configuration
@@ -65,6 +73,8 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("DATABASE_SSL_MODE", "disable")
 	viper.SetDefault("JWT_EXPIRATION_HOURS", 24)
 	viper.SetDefault("ALLOWED_ORIGINS", "http://localhost:4200")
+	viper.SetDefault("EMAIL_FROM", "noreply@habitta.com")
+	viper.SetDefault("APP_BASE_URL", "http://localhost:4200")
 
 	config := &Config{
 		Server: ServerConfig{
@@ -85,6 +95,11 @@ func LoadConfig() (*Config, error) {
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: viper.GetString("ALLOWED_ORIGINS"),
+		},
+		Email: EmailConfig{
+			ResendAPIKey: viper.GetString("RESEND_API_KEY"),
+			FromAddress:  viper.GetString("EMAIL_FROM"),
+			AppBaseURL:   viper.GetString("APP_BASE_URL"),
 		},
 	}
 
@@ -109,6 +124,9 @@ func (c *Config) Validate() error {
 	}
 	if c.JWT.Secret == "" {
 		return fmt.Errorf("JWT_SECRET is required")
+	}
+	if c.Server.Env != "development" && c.Email.ResendAPIKey == "" {
+		return fmt.Errorf("RESEND_API_KEY is required in non-development environments")
 	}
 	return nil
 }
