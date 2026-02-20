@@ -10,20 +10,21 @@ import (
 
 // JWTClaims represents the JWT claims structure
 type JWTClaims struct {
-	UserID   uint   `json:"user_id"`
-	TenantID uint   `json:"tenant_id"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	UserID         uint   `json:"user_id"`
+	Email          string `json:"email"`
+	ActiveTenantID *uint  `json:"active_tenant_id,omitempty"` // Nullable - user may have no active tenant
+	ActiveRole     string `json:"active_role,omitempty"`      // Role in the active tenant
 	jwt.RegisteredClaims
 }
 
 // GenerateJWT generates a new JWT token for a user
-func GenerateJWT(userID, tenantID uint, email, role, secret string, expirationHours int) (string, error) {
+// activeTenantID can be nil for users without an active tenant (orphan users)
+func GenerateJWT(userID uint, email string, activeTenantID *uint, activeRole, secret string, expirationHours int) (string, error) {
 	claims := JWTClaims{
-		UserID:   userID,
-		TenantID: tenantID,
-		Email:    email,
-		Role:     role,
+		UserID:         userID,
+		Email:          email,
+		ActiveTenantID: activeTenantID,
+		ActiveRole:     activeRole,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(expirationHours))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

@@ -90,25 +90,6 @@
         }
       </div>
 
-      <!-- Role -->
-      <div class="form-field">
-        <label for="role" class="form-label">Perfil *</label>
-        <p-select
-          id="role"
-          formControlName="role"
-          [options]="roleOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Selecione o perfil"
-          styleClass="w-full"
-          [class.ng-invalid]="isFieldInvalid('role')"
-          [class.ng-dirty]="getControl('role')?.touched"
-        />
-        @if (isFieldInvalid('role')) {
-          <small class="form-error">Perfil é obrigatório</small>
-        }
-      </div>
-
       <!-- Phone -->
       <div class="form-field">
         <label for="phone" class="form-label">Telefone</label>

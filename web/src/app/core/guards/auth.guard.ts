@@ -42,31 +42,3 @@ export const guestGuard: CanActivateFn = () => {
   router.navigate(['/dashboard']);
   return false;
 };
-
-/**
- * Role Guard Factory - Protects routes by user role
- * Usage: canActivate: [roleGuard(['admin', 'sindico'])]
- */
-export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
-  return (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
-    const authService = inject(AuthService);
-    const router = inject(Router);
-
-    // First check if user is authenticated
-    if (!authService.isAuthenticated()) {
-      router.navigate(['/login'], {
-        queryParams: { returnUrl: state.url }
-      });
-      return false;
-    }
-
-    // Check if user has required role
-    if (authService.hasAnyRole(allowedRoles)) {
-      return true;
-    }
-
-    // User doesn't have required role, redirect to unauthorized page
-    router.navigate(['/unauthorized']);
-    return false;
-  };
-};

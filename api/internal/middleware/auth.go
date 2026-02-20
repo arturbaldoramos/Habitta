@@ -35,21 +35,36 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 
 		// Set claims in context for later use
 		c.Set("user_id", claims.UserID)
-		c.Set("tenant_id", claims.TenantID)
 		c.Set("email", claims.Email)
-		c.Set("role", claims.Role)
+
+		// ActiveTenantID can be nil for orphan users (users without active tenant)
+		if claims.ActiveTenantID != nil {
+			c.Set("active_tenant_id", *claims.ActiveTenantID)
+			c.Set("active_role", claims.ActiveRole)
+		}
 
 		c.Next()
 	}
 }
 
-// RequireRole checks if the authenticated user has the required role
+// RequireRole checks if the authenticated user has the required role in the active tenant
 func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userRole, exists := c.Get("role")
+		// Check if user has an active tenant
+		_, hasTenant := c.Get("active_tenant_id")
+		if !hasTenant {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "Forbidden",
+				"message": "Active tenant required",
+			})
+			c.Abort()
+			return
+		}
+
+		userRole, exists := c.Get("active_role")
 		if !exists {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Forbidden",
+				"error":   "Forbidden",
 				"message": "User role not found in context",
 			})
 			c.Abort()
@@ -59,7 +74,7 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 		roleStr, ok := userRole.(string)
 		if !ok {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Forbidden",
+				"error":   "Forbidden",
 				"message": "Invalid role format",
 			})
 			c.Abort()
@@ -75,7 +90,7 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusForbidden, gin.H{
-			"error": "Forbidden",
+			"error":   "Forbidden",
 			"message": "Insufficient permissions",
 		})
 		c.Abort()

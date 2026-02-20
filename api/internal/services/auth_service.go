@@ -19,17 +19,23 @@ type LoginRequest struct {
 
 // LoginResponse represents the login response
 type LoginResponse struct {
-	Token string       `json:"token"`
-	User  *models.User `json:"user"`
+	Token   string                 `json:"token,omitempty"`
+	User    *models.User           `json:"user"`
+	Tenants []TenantSelectionInfo  `json:"tenants,omitempty"`
+}
+
+// TenantSelectionInfo represents tenant selection information for multi-tenant users
+type TenantSelectionInfo struct {
+	TenantID   uint             `json:"tenant_id"`
+	TenantName string           `json:"tenant_name"`
+	Role       models.UserRole  `json:"role"`
 }
 
 // RegisterRequest represents the registration request payload
 type RegisterRequest struct {
-	TenantID uint   `json:"tenant_id" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
 	Name     string `json:"name" binding:"required"`
-	Role     string `json:"role" binding:"required,oneof=admin sindico morador"`
 	Phone    string `json:"phone"`
 	CPF      string `json:"cpf"`
 }
@@ -37,52 +43,131 @@ type RegisterRequest struct {
 // AuthService defines the interface for authentication operations
 type AuthService interface {
 	Login(req LoginRequest) (*LoginResponse, error)
-	LoginWithTenant(tenantID uint, email, password string) (*LoginResponse, error)
+	LoginWithTenant(email, password string, tenantID uint) (*LoginResponse, error)
 	Register(req RegisterRequest) (*models.User, error)
+	SwitchTenant(userID, tenantID uint) (string, error)
 }
 
 // authService implements AuthService
 type authService struct {
-	userRepo   repositories.UserRepository
-	tenantRepo repositories.TenantRepository
-	config     *config.Config
+	userRepo       repositories.UserRepository
+	userTenantRepo repositories.UserTenantRepository
+	tenantRepo     repositories.TenantRepository
+	config         *config.Config
 }
 
 // NewAuthService creates a new auth service
 func NewAuthService(
 	userRepo repositories.UserRepository,
+	userTenantRepo repositories.UserTenantRepository,
 	tenantRepo repositories.TenantRepository,
 	config *config.Config,
 ) AuthService {
 	return &authService{
-		userRepo:   userRepo,
-		tenantRepo: tenantRepo,
-		config:     config,
+		userRepo:       userRepo,
+		userTenantRepo: userTenantRepo,
+		tenantRepo:     tenantRepo,
+		config:         config,
 	}
 }
 
-// Login authenticates a user and returns a JWT token
+// Login authenticates a user and returns appropriate response based on tenant count
 func (s *authService) Login(req LoginRequest) (*LoginResponse, error) {
-	// For login, we need to find the user across all tenants first
-	// In a real-world scenario, you might want to include tenant identifier in login
-	// For now, we'll search by email and get the first match
+	// Get user by email with all tenants
+	user, err := s.userRepo.GetByEmailWithTenants(req.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("invalid email or password")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
 
-	// This is a simplified approach - in production you might want to:
-	// 1. Use subdomain to identify tenant
-	// 2. Require tenant_id in login
-	// 3. Use a separate login endpoint per tenant
+	// Check if user is active
+	if !user.Active {
+		return nil, errors.New("user account is inactive")
+	}
 
-	// For MVP, we'll need to implement a GetByEmailGlobal method
-	// For now, let's assume we have tenant_id from somewhere (e.g., subdomain)
-	// This is a limitation we'll note in the TODO
+	// Validate password
+	if err := utils.CheckPassword(req.Password, user.Password); err != nil {
+		return nil, errors.New("invalid email or password")
+	}
 
-	return nil, errors.New("login requires tenant identification - implement subdomain or tenant_id selection")
+	// Remove password from response
+	user.Password = ""
+
+	// Get active user tenants
+	activeTenants := []models.UserTenant{}
+	for _, ut := range user.UserTenants {
+		if ut.IsActive {
+			activeTenants = append(activeTenants, ut)
+		}
+	}
+
+	// Case 1: User has no tenants (orphan user)
+	if len(activeTenants) == 0 {
+		token, err := utils.GenerateJWT(
+			user.ID,
+			user.Email,
+			nil, // no active tenant
+			"",
+			s.config.JWT.Secret,
+			s.config.JWT.ExpirationHours,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate token: %w", err)
+		}
+
+		return &LoginResponse{
+			Token: token,
+			User:  user,
+		}, nil
+	}
+
+	// Case 2: User has exactly one tenant
+	if len(activeTenants) == 1 {
+		tenantID := activeTenants[0].TenantID
+		role := activeTenants[0].Role
+
+		token, err := utils.GenerateJWT(
+			user.ID,
+			user.Email,
+			&tenantID,
+			string(role),
+			s.config.JWT.Secret,
+			s.config.JWT.ExpirationHours,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate token: %w", err)
+		}
+
+		return &LoginResponse{
+			Token: token,
+			User:  user,
+		}, nil
+	}
+
+	// Case 3: User has multiple tenants - return tenant selection list
+	tenantSelections := []TenantSelectionInfo{}
+	for _, ut := range activeTenants {
+		if ut.Tenant != nil {
+			tenantSelections = append(tenantSelections, TenantSelectionInfo{
+				TenantID:   ut.TenantID,
+				TenantName: ut.Tenant.Name,
+				Role:       ut.Role,
+			})
+		}
+	}
+
+	return &LoginResponse{
+		User:    user,
+		Tenants: tenantSelections,
+	}, nil
 }
 
-// LoginWithTenant authenticates a user within a specific tenant
-func (s *authService) LoginWithTenant(tenantID uint, email, password string) (*LoginResponse, error) {
-	// Get user by email and tenant
-	user, err := s.userRepo.GetByEmail(tenantID, email)
+// LoginWithTenant authenticates a user and sets specific tenant as active
+func (s *authService) LoginWithTenant(email, password string, tenantID uint) (*LoginResponse, error) {
+	// Get user by email
+	user, err := s.userRepo.GetByEmail(email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("invalid email or password")
@@ -100,12 +185,25 @@ func (s *authService) LoginWithTenant(tenantID uint, email, password string) (*L
 		return nil, errors.New("invalid email or password")
 	}
 
-	// Generate JWT token
+	// Verify user belongs to the requested tenant
+	userTenant, err := s.userTenantRepo.GetByUserAndTenant(user.ID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user does not belong to this tenant")
+		}
+		return nil, fmt.Errorf("failed to verify tenant access: %w", err)
+	}
+
+	if !userTenant.IsActive {
+		return nil, errors.New("user access to this tenant is inactive")
+	}
+
+	// Generate JWT token with active tenant
 	token, err := utils.GenerateJWT(
 		user.ID,
-		user.TenantID,
 		user.Email,
-		string(user.Role),
+		&tenantID,
+		string(userTenant.Role),
 		s.config.JWT.Secret,
 		s.config.JWT.ExpirationHours,
 	)
@@ -122,30 +220,20 @@ func (s *authService) LoginWithTenant(tenantID uint, email, password string) (*L
 	}, nil
 }
 
-// Register creates a new user account
+// Register creates a new orphan user account (without tenant)
 func (s *authService) Register(req RegisterRequest) (*models.User, error) {
 	// Validate password
 	if err := utils.IsPasswordValid(req.Password); err != nil {
 		return nil, err
 	}
 
-	// Check if tenant exists and is active
-	tenant, err := s.tenantRepo.GetByID(req.TenantID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("tenant not found")
-		}
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
-	if !tenant.Active {
-		return nil, errors.New("tenant is inactive")
-	}
-
-	// Check if email already exists for this tenant
-	existingUser, err := s.userRepo.GetByEmail(req.TenantID, req.Email)
+	// Check if email already exists globally
+	existingUser, err := s.userRepo.GetByEmail(req.Email)
 	if err == nil && existingUser != nil {
-		return nil, errors.New("email already registered for this tenant")
+		return nil, errors.New("email already registered")
+	}
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("failed to check existing email: %w", err)
 	}
 
 	// Hash password
@@ -154,13 +242,11 @@ func (s *authService) Register(req RegisterRequest) (*models.User, error) {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	// Create user
+	// Create orphan user (without tenant)
 	user := &models.User{
-		TenantID: req.TenantID,
 		Email:    req.Email,
 		Password: hashedPassword,
 		Name:     req.Name,
-		Role:     models.UserRole(req.Role),
 		Phone:    req.Phone,
 		CPF:      req.CPF,
 		Active:   true,
@@ -174,4 +260,44 @@ func (s *authService) Register(req RegisterRequest) (*models.User, error) {
 	user.Password = ""
 
 	return user, nil
+}
+
+// SwitchTenant generates a new token with a different active tenant
+func (s *authService) SwitchTenant(userID, tenantID uint) (string, error) {
+	// Get user
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", errors.New("user not found")
+		}
+		return "", fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// Verify user belongs to the requested tenant
+	userTenant, err := s.userTenantRepo.GetByUserAndTenant(userID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", errors.New("user does not belong to this tenant")
+		}
+		return "", fmt.Errorf("failed to verify tenant access: %w", err)
+	}
+
+	if !userTenant.IsActive {
+		return "", errors.New("user access to this tenant is inactive")
+	}
+
+	// Generate new JWT token with new active tenant
+	token, err := utils.GenerateJWT(
+		user.ID,
+		user.Email,
+		&tenantID,
+		string(userTenant.Role),
+		s.config.JWT.Secret,
+		s.config.JWT.ExpirationHours,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return token, nil
 }

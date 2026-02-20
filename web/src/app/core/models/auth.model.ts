@@ -1,4 +1,5 @@
 import { User, UserRole } from './user.model';
+import { TenantSelectionInfo } from './user-tenant.model';
 
 // Login Request
 export interface LoginRequest {
@@ -6,19 +7,18 @@ export interface LoginRequest {
   password: string;
 }
 
-// Login Response
+// Login Response (can return token OR tenant list for multi-tenant users)
 export interface LoginResponse {
-  token: string;
+  token?: string;
   user: User;
+  tenants?: TenantSelectionInfo[]; // If user has multiple tenants
 }
 
-// Register Request
+// Register Request (orphan user - no tenant_id)
 export interface RegisterRequest {
-  tenant_id: number;
   email: string;
   password: string;
   name: string;
-  role: UserRole;
   phone?: string;
   cpf?: string;
 }
@@ -26,9 +26,9 @@ export interface RegisterRequest {
 // JWT Token Payload (decoded)
 export interface JwtPayload {
   user_id: number;
-  tenant_id: number;
   email: string;
-  role: string;
+  active_tenant_id?: number; // Nullable - user may have no active tenant
+  active_role?: string; // Role in the active tenant
   exp: number;
   iat: number;
   nbf: number;
@@ -39,5 +39,6 @@ export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   token: string | null;
-  tenantId: number | null;
+  activeTenantId: number | null;
+  activeRole: UserRole | null;
 }

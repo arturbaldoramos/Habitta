@@ -9,9 +9,10 @@ type Tenant struct {
 	Phone  string `gorm:"type:varchar(20)" json:"phone"`
 	Active bool   `gorm:"default:true" json:"active"`
 
-	// Relationships
-	Users []User `gorm:"foreignKey:TenantID;constraint:OnDelete:CASCADE" json:"users,omitempty"`
-	Units []Unit `gorm:"foreignKey:TenantID;constraint:OnDelete:CASCADE" json:"units,omitempty"`
+	// Relationships - Many-to-Many with User
+	UserTenants []UserTenant `gorm:"foreignKey:TenantID" json:"user_tenants,omitempty"`
+	Users       []User       `gorm:"many2many:user_tenants" json:"users,omitempty"`
+	Units       []Unit       `gorm:"foreignKey:TenantID;constraint:OnDelete:CASCADE" json:"units,omitempty"`
 }
 
 // TableName specifies the table name for Tenant model

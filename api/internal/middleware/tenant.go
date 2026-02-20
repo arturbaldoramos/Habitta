@@ -6,25 +6,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TenantMiddleware extracts tenant_id from context (set by AuthMiddleware) and validates it
+// TenantMiddleware validates that user has an active tenant in context
+// This middleware requires AuthMiddleware to run first
 func TenantMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get tenant_id from context (should be set by AuthMiddleware)
-		tenantID, exists := c.Get("tenant_id")
+		// Get active_tenant_id from context (should be set by AuthMiddleware)
+		tenantID, exists := c.Get("active_tenant_id")
 		if !exists {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Forbidden",
-				"message": "Tenant ID not found in token",
+				"error":   "Forbidden",
+				"message": "Active tenant required",
 			})
 			c.Abort()
 			return
 		}
 
-		// Validate tenant_id
+		// Validate active_tenant_id
 		tenantIDUint, ok := tenantID.(uint)
 		if !ok || tenantIDUint == 0 {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Forbidden",
+				"error":   "Forbidden",
 				"message": "Invalid tenant ID",
 			})
 			c.Abort()
@@ -36,15 +37,35 @@ func TenantMiddleware() gin.HandlerFunc {
 	}
 }
 
-// GetTenantID is a helper function to extract tenant_id from context
+// OptionalTenantMiddleware allows access with or without an active tenant
+// This is useful for endpoints that work differently based on tenant context
+func OptionalTenantMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Just pass through - tenant may or may not be present in context
+		c.Next()
+	}
+}
+
+// GetTenantID is a helper function to extract active_tenant_id from context
 func GetTenantID(c *gin.Context) (uint, bool) {
-	tenantID, exists := c.Get("tenant_id")
+	tenantID, exists := c.Get("active_tenant_id")
 	if !exists {
 		return 0, false
 	}
 
 	tenantIDUint, ok := tenantID.(uint)
 	return tenantIDUint, ok
+}
+
+// GetActiveRole is a helper function to extract active_role from context
+func GetActiveRole(c *gin.Context) (string, bool) {
+	role, exists := c.Get("active_role")
+	if !exists {
+		return "", false
+	}
+
+	roleStr, ok := role.(string)
+	return roleStr, ok
 }
 
 // GetUserID is a helper function to extract user_id from context

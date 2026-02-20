@@ -29,7 +29,7 @@ export class DashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
 
   readonly currentUser = this.authService.currentUser;
-  readonly userRole = this.authService.userRole;
+  readonly userRole = this.authService.activeRole;
   readonly loading = signal(true);
 
   readonly cards = signal<DashboardCard[]>([]);

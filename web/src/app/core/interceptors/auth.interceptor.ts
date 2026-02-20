@@ -12,11 +12,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = authService.token();
 
   // Clone the request and add authorization header if token exists
-  // Skip adding token for auth endpoints (login, register)
-  const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/register');
+  // Skip adding token for public endpoints (auth, public invite endpoints)
+  const isPublicEndpoint =
+    req.url.includes('/auth/login') ||
+    req.url.includes('/auth/register') ||
+    (req.url.includes('/invites/') && req.url.includes('/accept')) ||
+    (req.url.match(/\/invites\/[a-f0-9-]+$/) && req.method === 'GET'); // GET /invites/:token
 
   let authReq = req;
-  if (token && !isAuthEndpoint) {
+  if (token && !isPublicEndpoint) {
     authReq = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
@@ -28,7 +32,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
       // If we get a 401 Unauthorized error, logout the user
-      if (error.status === 401 && !isAuthEndpoint) {
+      if (error.status === 401 && !isPublicEndpoint) {
         console.error('Unauthorized request - logging out');
         authService.logout();
       }
