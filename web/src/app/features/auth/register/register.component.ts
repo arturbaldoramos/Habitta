@@ -7,15 +7,9 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
-import { Select } from 'primeng/select';
 import { InputMask } from 'primeng/inputmask';
 import { AuthService } from '../../../core/services';
-import { RegisterRequest, UserRole } from '../../../core/models';
-
-interface RoleOption {
-  label: string;
-  value: UserRole;
-}
+import { RegisterRequest } from '../../../core/models';
 
 @Component({
   selector: 'app-register',
@@ -28,7 +22,6 @@ interface RoleOption {
     ButtonModule,
     CardModule,
     MessageModule,
-    Select,
     InputMask
   ],
   templateUrl: './register.component.html',
@@ -42,21 +35,14 @@ export class RegisterComponent {
   readonly registerForm: FormGroup;
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
-
-  readonly roleOptions: RoleOption[] = [
-    { label: 'Administrador', value: UserRole.ADMIN },
-    { label: 'Síndico', value: UserRole.SINDICO },
-    { label: 'Morador', value: UserRole.MORADOR }
-  ];
+  readonly successMessage = signal<string | null>(null);
 
   constructor() {
     this.registerForm = this.fb.group({
-      tenant_id: [1, [Validators.required, Validators.min(1)]],
       name: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
-      role: [UserRole.MORADOR, [Validators.required]],
       phone: [''],
       cpf: ['']
     }, {
@@ -83,21 +69,26 @@ export class RegisterComponent {
 
     this.loading.set(true);
     this.errorMessage.set(null);
+    this.successMessage.set(null);
 
     const formValue = this.registerForm.value;
     const registerData: RegisterRequest = {
-      tenant_id: formValue.tenant_id,
       name: formValue.name,
       email: formValue.email,
       password: formValue.password,
-      role: formValue.role,
       phone: formValue.phone || undefined,
       cpf: formValue.cpf || undefined
     };
 
     this.authService.register(registerData).subscribe({
       next: () => {
-        this.router.navigate(['/dashboard']);
+        this.loading.set(false);
+        this.successMessage.set('Conta criada com sucesso! Redirecionando...');
+
+        // After registration, user needs to login or create/join a tenant
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 2000);
       },
       error: (error) => {
         this.loading.set(false);

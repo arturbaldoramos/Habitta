@@ -1,5 +1,9 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from './core/guards';
+import { authGuard } from './core/guards';
+import { tenantRequiredGuard } from './core/guards/tenant-required.guard';
+import { orphanUserGuard } from './core/guards/orphan-user.guard';
+import { sindicoOrAdminGuard } from './core/guards/role.guard';
+import { UserRole } from './core/models';
 
 export const routes: Routes = [
   // Redirect root to dashboard or login
@@ -9,22 +13,36 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
 
-  // Auth routes (accessible only when not authenticated)
+  // Public routes (no authentication required)
   {
     path: 'login',
-    canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
   {
     path: 'register',
-    canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
   },
+  {
+    path: 'invite/:token',
+    loadComponent: () => import('./features/invites/accept-invite/accept-invite.component').then(m => m.AcceptInviteComponent)
+  },
 
-  // Protected routes (require authentication)
+  // Protected routes WITHOUT tenant context (orphan users can access)
+  {
+    path: 'create-tenant',
+    canActivate: [authGuard, orphanUserGuard],
+    loadComponent: () => import('./features/tenants/create-tenant/create-tenant.component').then(m => m.CreateTenantComponent)
+  },
+  {
+    path: 'my-tenants',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/tenants/my-tenants/my-tenants.component').then(m => m.MyTenantsComponent)
+  },
+
+  // Protected routes WITH tenant context (requires active tenant)
   {
     path: '',
-    canActivate: [authGuard],
+    canActivate: [authGuard, tenantRequiredGuard],
     loadComponent: () => import('./shared/layouts/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
     children: [
       {
@@ -32,10 +50,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
 
-      // User routes (admin and sindico only)
+      // User routes (admin and síndico only)
       {
         path: 'users',
-        canActivate: [roleGuard(['admin', 'sindico'])],
+        canActivate: [sindicoOrAdminGuard],
         children: [
           {
             path: '',
@@ -52,10 +70,10 @@ export const routes: Routes = [
         ]
       },
 
-      // Unit routes (admin and sindico only)
+      // Unit routes (admin and síndico only)
       {
         path: 'units',
-        canActivate: [roleGuard(['admin', 'sindico'])],
+        canActivate: [sindicoOrAdminGuard],
         children: [
           {
             path: '',
@@ -70,6 +88,13 @@ export const routes: Routes = [
             loadComponent: () => import('./features/units/unit-form/unit-form.component').then(m => m.UnitFormComponent)
           }
         ]
+      },
+
+      // Invite management (síndico and admin only)
+      {
+        path: 'invites',
+        canActivate: [sindicoOrAdminGuard],
+        loadComponent: () => import('./features/invites/invite-management/invite-management.component').then(m => m.InviteManagementComponent)
       }
     ]
   },

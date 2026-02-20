@@ -11,15 +11,13 @@ import (
 )
 
 // UserService defines the interface for user operations
+// NOTE: This service needs refactoring to work with multi-tenant architecture
+// Most methods are deprecated and should use UserTenantRepository instead
 type UserService interface {
-	Create(user *models.User) error
-	GetByID(tenantID, userID uint) (*models.User, error)
-	GetByEmail(tenantID uint, email string) (*models.User, error)
-	GetAll(tenantID uint) ([]models.User, error)
-	GetByRole(tenantID uint, role models.UserRole) ([]models.User, error)
+	GetByID(userID uint) (*models.User, error)
 	Update(user *models.User) error
-	UpdatePassword(tenantID, userID uint, oldPassword, newPassword string) error
-	Delete(tenantID, userID uint) error
+	UpdatePassword(userID uint, oldPassword, newPassword string) error
+	Delete(userID uint) error
 }
 
 // userService implements UserService
@@ -39,72 +37,9 @@ func NewUserService(
 	}
 }
 
-// Create creates a new user with validation
-func (s *userService) Create(user *models.User) error {
-	// Validate tenant exists and is active
-	tenant, err := s.tenantRepo.GetByID(user.TenantID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("tenant not found")
-		}
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
-
-	if !tenant.Active {
-		return errors.New("tenant is inactive")
-	}
-
-	// Validate required fields
-	if user.Email == "" {
-		return errors.New("email is required")
-	}
-
-	if user.Name == "" {
-		return errors.New("name is required")
-	}
-
-	if user.Password == "" {
-		return errors.New("password is required")
-	}
-
-	// Validate password
-	if err := utils.IsPasswordValid(user.Password); err != nil {
-		return err
-	}
-
-	// Check if email already exists for this tenant
-	existingUser, err := s.userRepo.GetByEmail(user.TenantID, user.Email)
-	if err == nil && existingUser != nil {
-		return errors.New("email already registered for this tenant")
-	}
-
-	// Hash password
-	hashedPassword, err := utils.HashPassword(user.Password)
-	if err != nil {
-		return fmt.Errorf("failed to hash password: %w", err)
-	}
-	user.Password = hashedPassword
-
-	// Set default values
-	if user.Role == "" {
-		user.Role = models.RoleMorador
-	}
-	user.Active = true
-
-	// Create user
-	if err := s.userRepo.Create(user); err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
-	}
-
-	// Remove password from response
-	user.Password = ""
-
-	return nil
-}
-
-// GetByID retrieves a user by ID with tenant isolation
-func (s *userService) GetByID(tenantID, userID uint) (*models.User, error) {
-	user, err := s.userRepo.GetByID(tenantID, userID)
+// GetByID retrieves a user by ID
+func (s *userService) GetByID(userID uint) (*models.User, error) {
+	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
@@ -116,62 +51,12 @@ func (s *userService) GetByID(tenantID, userID uint) (*models.User, error) {
 	user.Password = ""
 
 	return user, nil
-}
-
-// GetByEmail retrieves a user by email with tenant isolation
-func (s *userService) GetByEmail(tenantID uint, email string) (*models.User, error) {
-	if email == "" {
-		return nil, errors.New("email is required")
-	}
-
-	user, err := s.userRepo.GetByEmail(tenantID, email)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found")
-		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
-	}
-
-	// Remove password from response
-	user.Password = ""
-
-	return user, nil
-}
-
-// GetAll retrieves all users for a tenant
-func (s *userService) GetAll(tenantID uint) ([]models.User, error) {
-	users, err := s.userRepo.GetAll(tenantID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get users: %w", err)
-	}
-
-	// Remove passwords from response
-	for i := range users {
-		users[i].Password = ""
-	}
-
-	return users, nil
-}
-
-// GetByRole retrieves users by role for a tenant
-func (s *userService) GetByRole(tenantID uint, role models.UserRole) ([]models.User, error) {
-	users, err := s.userRepo.GetByTenantAndRole(tenantID, role)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get users: %w", err)
-	}
-
-	// Remove passwords from response
-	for i := range users {
-		users[i].Password = ""
-	}
-
-	return users, nil
 }
 
 // Update updates a user (excluding password)
 func (s *userService) Update(user *models.User) error {
 	// Validate user exists
-	existing, err := s.userRepo.GetByID(user.TenantID, user.ID)
+	existing, err := s.userRepo.GetByID(user.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("user not found")
@@ -190,9 +75,9 @@ func (s *userService) Update(user *models.User) error {
 
 	// Check if email is being changed and if it's already taken
 	if user.Email != existing.Email {
-		existingWithEmail, err := s.userRepo.GetByEmail(user.TenantID, user.Email)
+		existingWithEmail, err := s.userRepo.GetByEmail(user.Email)
 		if err == nil && existingWithEmail != nil && existingWithEmail.ID != user.ID {
-			return errors.New("email already registered for this tenant")
+			return errors.New("email already registered")
 		}
 	}
 
@@ -208,9 +93,9 @@ func (s *userService) Update(user *models.User) error {
 }
 
 // UpdatePassword updates a user's password
-func (s *userService) UpdatePassword(tenantID, userID uint, oldPassword, newPassword string) error {
+func (s *userService) UpdatePassword(userID uint, oldPassword, newPassword string) error {
 	// Get user
-	user, err := s.userRepo.GetByID(tenantID, userID)
+	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("user not found")
@@ -243,10 +128,10 @@ func (s *userService) UpdatePassword(tenantID, userID uint, oldPassword, newPass
 	return nil
 }
 
-// Delete soft deletes a user with tenant isolation
-func (s *userService) Delete(tenantID, userID uint) error {
+// Delete soft deletes a user
+func (s *userService) Delete(userID uint) error {
 	// Validate user exists
-	_, err := s.userRepo.GetByID(tenantID, userID)
+	_, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("user not found")
@@ -255,7 +140,7 @@ func (s *userService) Delete(tenantID, userID uint) error {
 	}
 
 	// Delete user
-	if err := s.userRepo.Delete(tenantID, userID); err != nil {
+	if err := s.userRepo.Delete(userID); err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 

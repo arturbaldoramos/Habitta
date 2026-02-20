@@ -28,7 +28,7 @@ export class MainLayoutComponent {
 
   readonly sidebarVisible = signal(false);
   readonly currentUser = this.authService.currentUser;
-  readonly userRole = this.authService.userRole;
+  readonly userRole = this.authService.activeRole;
 
   readonly menuItems: MenuItem[] = [
     {

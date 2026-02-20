@@ -5,7 +5,6 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
-import { Select } from 'primeng/select';
 import { InputMask } from 'primeng/inputmask';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ButtonModule } from 'primeng/button';
@@ -13,12 +12,7 @@ import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { UserService } from '../../../core/services';
-import { CreateUserDto, UpdateUserDto, UserRole } from '../../../core/models';
-
-interface RoleOption {
-  label: string;
-  value: UserRole;
-}
+import { CreateUserDto, UpdateUserDto } from '../../../core/models';
 
 @Component({
   selector: 'app-user-form',
@@ -28,7 +22,6 @@ interface RoleOption {
     CardModule,
     InputTextModule,
     PasswordModule,
-    Select,
     InputMask,
     CheckboxModule,
     ButtonModule,
@@ -53,18 +46,11 @@ export class UserFormComponent implements OnInit {
 
   userId: number | null = null;
 
-  readonly roleOptions: RoleOption[] = [
-    { label: 'Administrador', value: UserRole.ADMIN },
-    { label: 'Síndico', value: UserRole.SINDICO },
-    { label: 'Morador', value: UserRole.MORADOR }
-  ];
-
   constructor() {
     this.userForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.minLength(6)]],
-      role: [UserRole.MORADOR, [Validators.required]],
       phone: [''],
       cpf: [''],
       unit_id: [null],
@@ -97,7 +83,6 @@ export class UserFormComponent implements OnInit {
         this.userForm.patchValue({
           name: user.name,
           email: user.email,
-          role: user.role,
           phone: user.phone || '',
           cpf: user.cpf || '',
           unit_id: user.unit_id || null,
@@ -133,7 +118,6 @@ export class UserFormComponent implements OnInit {
       const updateData: UpdateUserDto = {
         name: formValue.name,
         email: formValue.email,
-        role: formValue.role,
         phone: formValue.phone || undefined,
         cpf: formValue.cpf || undefined,
         unit_id: formValue.unit_id || undefined,
@@ -159,10 +143,8 @@ export class UserFormComponent implements OnInit {
         name: formValue.name,
         email: formValue.email,
         password: formValue.password,
-        role: formValue.role,
         phone: formValue.phone || undefined,
-        cpf: formValue.cpf || undefined,
-        unit_id: formValue.unit_id || undefined
+        cpf: formValue.cpf || undefined
       };
 
       this.userService.createUser(createData).subscribe({

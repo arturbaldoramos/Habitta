@@ -81,3 +81,11 @@
     </div>
   </div>
 </div>
+
+<!-- Tenant Selector Modal -->
+<app-tenant-selector
+  [tenants]="tenants()"
+  [visible]="showTenantSelector()"
+  [loading]="loading()"
+  (tenantSelected)="onTenantSelected($event)"
+/>

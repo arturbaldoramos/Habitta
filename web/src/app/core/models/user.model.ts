@@ -5,43 +5,40 @@ export enum UserRole {
   MORADOR = 'morador',
 }
 
-// User interface
+// User interface (multi-tenant - user can belong to multiple tenants)
 export interface User {
   id: number;
-  tenant_id: number;
   email: string;
   name: string;
-  role: UserRole;
   active: boolean;
   phone?: string;
   cpf?: string;
   unit_id?: number;
   created_at: string;
   updated_at: string;
-  tenant?: Tenant;
+  user_tenants?: UserTenant[];
+  tenants?: Tenant[];
   unit?: Unit;
 }
 
 // Import types (to avoid circular dependencies, we use any for now)
 type Tenant = any;
 type Unit = any;
+type UserTenant = any;
 
 // Create User DTO
 export interface CreateUserDto {
   email: string;
   password: string;
   name: string;
-  role: UserRole;
   phone?: string;
   cpf?: string;
-  unit_id?: number;
 }
 
 // Update User DTO
 export interface UpdateUserDto {
   email?: string;
   name?: string;
-  role?: UserRole;
   phone?: string;
   cpf?: string;
   unit_id?: number;

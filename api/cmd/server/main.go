@@ -37,9 +37,15 @@ func main() {
 	}
 	log.Println("Database connection established")
 
-	// Run migrations
+	// Run migrations - ORDER MATTERS! (dependencies first)
 	log.Println("Running database migrations...")
-	if err := database.AutoMigrate(db, &models.Tenant{}, &models.User{}, &models.Unit{}); err != nil {
+	if err := database.AutoMigrate(db,
+		&models.Tenant{},
+		&models.User{},
+		&models.UserTenant{}, // Pivot table for many-to-many
+		&models.Invite{},     // Invite system
+		&models.Unit{},
+	); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 	log.Println("Database migrations completed")
@@ -47,11 +53,15 @@ func main() {
 	// Initialize repositories
 	tenantRepo := repositories.NewTenantRepository(db)
 	userRepo := repositories.NewUserRepository(db)
+	userTenantRepo := repositories.NewUserTenantRepository(db)
+	inviteRepo := repositories.NewInviteRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	log.Println("Repositories initialized")
 
 	// Initialize services
-	authService := services.NewAuthService(userRepo, tenantRepo, cfg)
+	authService := services.NewAuthService(userRepo, userTenantRepo, tenantRepo, cfg)
+	tenantMgmtService := services.NewTenantManagementService(tenantRepo, userTenantRepo, db)
+	inviteService := services.NewInviteService(inviteRepo, userRepo, userTenantRepo, db)
 	tenantService := services.NewTenantService(tenantRepo)
 	userService := services.NewUserService(userRepo, tenantRepo)
 	unitService := services.NewUnitService(unitRepo, tenantRepo)
@@ -59,6 +69,9 @@ func main() {
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
+	tenantMgmtHandler := handlers.NewTenantManagementHandler(tenantMgmtService)
+	inviteHandler := handlers.NewInviteHandler(inviteService)
+	userTenantsHandler := handlers.NewUserTenantsHandler(userTenantRepo)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
 	userHandler := handlers.NewUserHandler(userService)
 	unitHandler := handlers.NewUnitHandler(unitService)
@@ -88,20 +101,44 @@ func main() {
 	{
 		// Public routes (no authentication required)
 		authHandler.RegisterRoutes(api)
+		api.GET("/invites/:token", inviteHandler.GetInviteByToken)
+		api.POST("/invites/:token/accept", inviteHandler.AcceptInvite)
 
-		// Protected routes (authentication required)
-		protected := api.Group("")
-		protected.Use(middleware.AuthMiddleware(cfg.JWT.Secret))
-		protected.Use(middleware.TenantMiddleware())
+		// Protected routes WITHOUT tenant context (orphan users can access)
+		protectedNoTenant := api.Group("")
+		protectedNoTenant.Use(middleware.AuthMiddleware(cfg.JWT.Secret))
 		{
-			// User routes (tenant-isolated)
-			userHandler.RegisterRoutes(protected)
+			// Tenant management - create condominium (user becomes síndico)
+			protectedNoTenant.POST("/tenants/create", tenantMgmtHandler.CreateTenant)
 
-			// Unit routes (tenant-isolated)
-			unitHandler.RegisterRoutes(protected)
+			// User tenants - list my condominiums
+			protectedNoTenant.GET("/users/me/tenants", userTenantsHandler.GetMyTenants)
+
+			// Auth - switch active tenant
+			protectedNoTenant.POST("/auth/switch-tenant/:tenant_id", authHandler.SwitchTenant)
+
+			// Invites - my pending invites
+			protectedNoTenant.GET("/invites/me", inviteHandler.GetMyPendingInvites)
 		}
 
-		// Admin routes (authentication required, no tenant isolation)
+		// Protected routes WITH tenant context (requires active_tenant_id)
+		protectedWithTenant := api.Group("")
+		protectedWithTenant.Use(middleware.AuthMiddleware(cfg.JWT.Secret))
+		protectedWithTenant.Use(middleware.TenantMiddleware())
+		{
+			// User routes (tenant-isolated)
+			userHandler.RegisterRoutes(protectedWithTenant)
+
+			// Unit routes (tenant-isolated)
+			unitHandler.RegisterRoutes(protectedWithTenant)
+
+			// Invite routes (tenant-isolated, síndico/admin only)
+			protectedWithTenant.POST("/invites", inviteHandler.CreateInvite)
+			protectedWithTenant.DELETE("/invites/:id", inviteHandler.CancelInvite)
+			protectedWithTenant.GET("/tenants/invites", inviteHandler.GetTenantInvites)
+		}
+
+		// Admin routes (global admin, no tenant context)
 		admin := api.Group("")
 		admin.Use(middleware.AuthMiddleware(cfg.JWT.Secret))
 		admin.Use(middleware.RequireRole("admin"))
