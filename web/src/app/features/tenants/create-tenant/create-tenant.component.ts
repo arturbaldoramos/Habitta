@@ -21,75 +21,7 @@ import { CreateTenantDto } from '../../../core/models';
     MessageModule,
     InputMask
   ],
-  template: `
-    <div class="flex justify-center items-center min-h-screen bg-gray-100">
-      <p-card
-        header="Criar Condomínio"
-        subheader="Você se tornará síndico automaticamente"
-        [style]="{ width: '500px' }">
-
-        @if (errorMessage()) {
-          <p-message severity="error" [text]="errorMessage()!" />
-        }
-
-        <form [formGroup]="createForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <label for="name">Nome do Condomínio *</label>
-            <input
-              pInputText
-              id="name"
-              formControlName="name"
-              placeholder="Ex: Residencial Vista Verde"
-              [class.ng-invalid]="isFieldInvalid('name')"
-              [class.ng-dirty]="isFieldInvalid('name')" />
-            @if (isFieldInvalid('name')) {
-              <small class="text-red-500">Nome é obrigatório (mínimo 3 caracteres)</small>
-            }
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="cnpj">CNPJ *</label>
-            <p-inputmask
-              id="cnpj"
-              formControlName="cnpj"
-              mask="99.999.999/9999-99"
-              placeholder="00.000.000/0000-00"
-              [class.ng-invalid]="isFieldInvalid('cnpj')"
-              [class.ng-dirty]="isFieldInvalid('cnpj')" />
-            @if (isFieldInvalid('cnpj')) {
-              <small class="text-red-500">CNPJ é obrigatório</small>
-            }
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="email">Email</label>
-            <input
-              pInputText
-              id="email"
-              formControlName="email"
-              type="email"
-              placeholder="contato@condominio.com" />
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="phone">Telefone</label>
-            <p-inputmask
-              id="phone"
-              formControlName="phone"
-              mask="(99) 99999-9999"
-              placeholder="(00) 00000-0000" />
-          </div>
-
-          <p-button
-            type="submit"
-            label="Criar Condomínio"
-            [loading]="loading()"
-            [disabled]="createForm.invalid || loading()"
-            styleClass="w-full" />
-        </form>
-      </p-card>
-    </div>
-  `
+  templateUrl: './create-tenant.component.html'
 })
 export class CreateTenantComponent {
   private readonly fb = inject(FormBuilder);

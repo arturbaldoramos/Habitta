@@ -1,0 +1,150 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-800">Gerenciar Convites</h1>
+      <p class="text-gray-600 mt-2">Convide novos moradores para o condomínio</p>
+    </div>
+    <p-button
+      label="Novo Convite"
+      icon="pi pi-plus"
+      (onClick)="showCreateDialog()"
+      severity="primary" />
+  </div>
+
+  @if (errorMessage()) {
+    <p-message severity="error" [text]="errorMessage()!" styleClass="w-full mb-4" />
+  }
+
+  <!-- Invites Table -->
+  <p-card>
+    <p-table
+      [value]="invites()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} convites"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      styleClass="p-datatable-sm">
+
+      <ng-template #header>
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Convidado por</th>
+          <th>Expira em</th>
+          <th>Ações</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-invite>
+        <tr>
+          <td>{{ invite.email }}</td>
+          <td>
+            <p-tag
+              [value]="getRoleLabel(invite.role)"
+              [severity]="getRoleSeverity(invite.role)" />
+          </td>
+          <td>
+            <p-tag
+              [value]="getStatusLabel(invite.status)"
+              [severity]="getStatusSeverity(invite.status)" />
+          </td>
+          <td>{{ invite.invited_by?.name }}</td>
+          <td>{{ formatDate(invite.expires_at) }}</td>
+          <td>
+            <div class="flex gap-2">
+              @if (invite.status === 'pending') {
+                <p-button
+                  icon="pi pi-copy"
+                  (onClick)="copyInviteLink(invite.token)"
+                  [text]="true"
+                  severity="secondary"
+                  [pTooltip]="'Copiar link'" />
+                <p-button
+                  icon="pi pi-times"
+                  (onClick)="confirmCancel(invite)"
+                  [text]="true"
+                  severity="danger"
+                  [pTooltip]="'Cancelar convite'" />
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6" class="text-center py-8 text-gray-500">
+            Nenhum convite encontrado
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</div>
+
+<!-- Create Invite Dialog -->
+<p-dialog
+  header="Criar Novo Convite"
+  [(visible)]="showDialog"
+  [modal]="true"
+  [style]="{ width: '500px' }">
+
+  <form [formGroup]="inviteForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+    @if (dialogError()) {
+      <p-message severity="error" [text]="dialogError()!" styleClass="w-full" />
+    }
+
+    <div class="flex flex-col gap-2">
+      <label for="email">Email *</label>
+      <input
+        pInputText
+        id="email"
+        formControlName="email"
+        placeholder="email@exemplo.com"
+        [class.ng-invalid]="isFieldInvalid('email')"
+        [class.ng-dirty]="isFieldInvalid('email')" />
+      @if (isFieldInvalid('email')) {
+        <small class="text-red-500">Email válido é obrigatório</small>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="role">Permissão *</label>
+      <p-select
+        id="role"
+        formControlName="role"
+        [options]="roleOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Selecione uma permissão"
+        styleClass="w-full" />
+      @if (isFieldInvalid('role')) {
+        <small class="text-red-500">Permissão é obrigatória</small>
+      }
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button
+        type="button"
+        label="Cancelar"
+        (onClick)="closeDialog()"
+        [text]="true"
+        severity="secondary" />
+      <p-button
+        type="submit"
+        label="Criar Convite"
+        [loading]="creating()"
+        [disabled]="inviteForm.invalid || creating()"
+        severity="primary" />
+    </div>
+  </form>
+</p-dialog>
+
+<!-- Confirm Dialog -->
+<p-confirmDialog />
+
+<!-- Toast -->
+<p-toast />
