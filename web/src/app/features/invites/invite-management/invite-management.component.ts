@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -9,13 +10,10 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Select } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { TooltipModule } from 'primeng/tooltip';
 import { InviteService, AuthService } from '../../../core/services';
-import { Invite, CreateInviteDto, UserRole, InviteStatus } from '../../../core/models';
+import { InviteListItem, CreateInviteDto, UserRole, InviteStatus } from '../../../core/models';
 
 interface RoleOption {
   label: string;
@@ -35,21 +33,19 @@ interface RoleOption {
     TagModule,
     Select,
     DialogModule,
-    ConfirmDialogModule,
-    ToastModule,
-    TooltipModule
+    ToastModule
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [MessageService],
   templateUrl: './invite-management.component.html'
 })
 export class InviteManagementComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly inviteService = inject(InviteService);
   private readonly authService = inject(AuthService);
-  private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
+  private readonly router = inject(Router);
 
-  readonly invites = signal<Invite[]>([]);
+  readonly invites = signal<InviteListItem[]>([]);
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
   readonly dialogError = signal<string | null>(null);
@@ -72,7 +68,6 @@ export class InviteManagementComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Check if user has permission
     if (!this.authService.isSindicoOrAdmin()) {
       this.errorMessage.set('Você não tem permissão para acessar esta página');
       return;
@@ -138,7 +133,6 @@ export class InviteManagementComponent implements OnInit {
           life: 3000
         });
 
-        // Auto-copy invite link
         this.copyInviteLink(invite.token);
       },
       error: (error) => {
@@ -150,39 +144,8 @@ export class InviteManagementComponent implements OnInit {
     });
   }
 
-  confirmCancel(invite: Invite): void {
-    this.confirmationService.confirm({
-      message: `Deseja cancelar o convite para ${invite.email}?`,
-      header: 'Confirmar Cancelamento',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sim, cancelar',
-      rejectLabel: 'Não',
-      accept: () => {
-        this.cancelInvite(invite.id);
-      }
-    });
-  }
-
-  cancelInvite(inviteId: number): void {
-    this.inviteService.cancelInvite(inviteId).subscribe({
-      next: () => {
-        this.loadInvites();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Convite Cancelado',
-          detail: 'O convite foi cancelado com sucesso',
-          life: 3000
-        });
-      },
-      error: (error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Erro',
-          detail: error.error?.message || 'Erro ao cancelar convite',
-          life: 3000
-        });
-      }
-    });
+  navigateToInvite(invite: InviteListItem): void {
+    this.router.navigate(['/invites', invite.id], { state: { invite } });
   }
 
   copyInviteLink(token: string): void {
@@ -210,8 +173,8 @@ export class InviteManagementComponent implements OnInit {
     return !!(control && control.invalid && control.touched);
   }
 
-  getRoleLabel(role: UserRole): string {
-    const labels: Record<UserRole, string> = {
+  getRoleLabel(role: string): string {
+    const labels: Record<string, string> = {
       [UserRole.ADMIN]: 'Admin',
       [UserRole.SINDICO]: 'Síndico',
       [UserRole.MORADOR]: 'Morador'
@@ -219,8 +182,8 @@ export class InviteManagementComponent implements OnInit {
     return labels[role] || role;
   }
 
-  getRoleSeverity(role: UserRole): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
-    const severities: Record<UserRole, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
+  getRoleSeverity(role: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    const severities: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
       [UserRole.ADMIN]: 'danger',
       [UserRole.SINDICO]: 'warn',
       [UserRole.MORADOR]: 'info'
@@ -228,8 +191,8 @@ export class InviteManagementComponent implements OnInit {
     return severities[role] || 'secondary';
   }
 
-  getStatusLabel(status: InviteStatus): string {
-    const labels: Record<InviteStatus, string> = {
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
       [InviteStatus.PENDING]: 'Pendente',
       [InviteStatus.ACCEPTED]: 'Aceito',
       [InviteStatus.EXPIRED]: 'Expirado',
@@ -238,8 +201,8 @@ export class InviteManagementComponent implements OnInit {
     return labels[status] || status;
   }
 
-  getStatusSeverity(status: InviteStatus): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
-    const severities: Record<InviteStatus, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
+  getStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    const severities: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast'> = {
       [InviteStatus.PENDING]: 'warn',
       [InviteStatus.ACCEPTED]: 'success',
       [InviteStatus.EXPIRED]: 'secondary',

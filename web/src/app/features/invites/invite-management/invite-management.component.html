@@ -34,12 +34,12 @@
           <th>Status</th>
           <th>Convidado por</th>
           <th>Expira em</th>
-          <th>Ações</th>
+          <th style="width: 50px"></th>
         </tr>
       </ng-template>
 
       <ng-template #body let-invite>
-        <tr>
+        <tr (click)="navigateToInvite(invite)" class="cursor-pointer">
           <td>{{ invite.email }}</td>
           <td>
             <p-tag
@@ -51,25 +51,10 @@
               [value]="getStatusLabel(invite.status)"
               [severity]="getStatusSeverity(invite.status)" />
           </td>
-          <td>{{ invite.invited_by?.name }}</td>
+          <td>{{ invite.invited_by_name }}</td>
           <td>{{ formatDate(invite.expires_at) }}</td>
           <td>
-            <div class="flex gap-2">
-              @if (invite.status === 'pending') {
-                <p-button
-                  icon="pi pi-copy"
-                  (onClick)="copyInviteLink(invite.token)"
-                  [text]="true"
-                  severity="secondary"
-                  [pTooltip]="'Copiar link'" />
-                <p-button
-                  icon="pi pi-times"
-                  (onClick)="confirmCancel(invite)"
-                  [text]="true"
-                  severity="danger"
-                  [pTooltip]="'Cancelar convite'" />
-              }
-            </div>
+            <i class="pi pi-chevron-right text-gray-400"></i>
           </td>
         </tr>
       </ng-template>
@@ -142,9 +127,6 @@
     </div>
   </form>
 </p-dialog>
-
-<!-- Confirm Dialog -->
-<p-confirmDialog />
 
 <!-- Toast -->
 <p-toast />

@@ -1,0 +1,92 @@
+<div class="detail-page">
+  <div class="header-section">
+    <p-button
+      icon="pi pi-arrow-left"
+      label="Voltar"
+      [text]="true"
+      severity="secondary"
+      (onClick)="goBack()"
+    />
+    <h1 class="page-title">Detalhes do Convite</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <i class="pi pi-spinner pi-spin text-2xl"></i>
+    </div>
+  }
+
+  @if (invite(); as invite) {
+    <p-card>
+      <div class="detail-grid">
+        <div class="detail-field">
+          <span class="detail-label">Email</span>
+          <span class="detail-value">{{ invite.email }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Perfil</span>
+          <div>
+            <p-tag
+              [value]="getRoleLabel(invite.role)"
+              [severity]="getRoleSeverity(invite.role)"
+            />
+          </div>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Status</span>
+          <div>
+            <p-tag
+              [value]="getStatusLabel(invite.status)"
+              [severity]="getStatusSeverity(invite.status)"
+            />
+          </div>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Convidado por</span>
+          <span class="detail-value">{{ invite.invited_by_name || '-' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Data de criação</span>
+          <span class="detail-value">{{ formatDate(invite.created_at) }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Expiração</span>
+          <span class="detail-value">{{ formatDate(invite.expires_at) }}</span>
+        </div>
+        @if (invite.accepted_at) {
+          <div class="detail-field">
+            <span class="detail-label">Aceito em</span>
+            <span class="detail-value">{{ formatDate(invite.accepted_at) }}</span>
+          </div>
+        }
+        @if (invite.accepted_by_name) {
+          <div class="detail-field">
+            <span class="detail-label">Aceito por</span>
+            <span class="detail-value">{{ invite.accepted_by_name }}</span>
+          </div>
+        }
+      </div>
+
+      @if (invite.status === InviteStatus.PENDING) {
+        <div class="form-actions">
+          <p-button
+            label="Copiar Link"
+            icon="pi pi-copy"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="copyInviteLink()"
+          />
+          <p-button
+            label="Cancelar Convite"
+            icon="pi pi-times"
+            severity="danger"
+            (onClick)="confirmCancel()"
+          />
+        </div>
+      }
+    </p-card>
+  }
+
+  <p-confirmDialog />
+  <p-toast />
+</div>
