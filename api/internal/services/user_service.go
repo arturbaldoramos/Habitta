@@ -10,11 +10,23 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserInTenant represents combined User + UserTenant data for a specific tenant
+type UserInTenant struct {
+	ID       uint   `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Role     string `json:"role"`
+	IsActive bool   `json:"is_active"`
+	UnitID   *uint  `json:"unit_id"`
+}
+
 // UserService defines the interface for user operations
-// NOTE: This service needs refactoring to work with multi-tenant architecture
-// Most methods are deprecated and should use UserTenantRepository instead
 type UserService interface {
 	GetByID(userID uint) (*models.User, error)
+	GetByIDInTenant(tenantID, userID uint) (*UserInTenant, error)
+	ListByTenant(tenantID uint, page, perPage int, search string) ([]models.UserTenant, int64, error)
+	UpdateMembership(tenantID, userID uint, isActive bool, unitID *uint) error
 	Update(user *models.User) error
 	UpdatePassword(userID uint, oldPassword, newPassword string) error
 	Delete(userID uint) error
@@ -22,19 +34,39 @@ type UserService interface {
 
 // userService implements UserService
 type userService struct {
-	userRepo   repositories.UserRepository
-	tenantRepo repositories.TenantRepository
+	userRepo       repositories.UserRepository
+	tenantRepo     repositories.TenantRepository
+	userTenantRepo repositories.UserTenantRepository
 }
 
 // NewUserService creates a new user service
 func NewUserService(
 	userRepo repositories.UserRepository,
 	tenantRepo repositories.TenantRepository,
+	userTenantRepo repositories.UserTenantRepository,
 ) UserService {
 	return &userService{
-		userRepo:   userRepo,
-		tenantRepo: tenantRepo,
+		userRepo:       userRepo,
+		tenantRepo:     tenantRepo,
+		userTenantRepo: userTenantRepo,
 	}
+}
+
+// ListByTenant retrieves paginated users for a tenant
+func (s *userService) ListByTenant(tenantID uint, page, perPage int, search string) ([]models.UserTenant, int64, error) {
+	userTenants, total, err := s.userTenantRepo.GetAllByTenantPaginated(tenantID, page, perPage, search)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list users: %w", err)
+	}
+
+	// Remove password from users
+	for i := range userTenants {
+		if userTenants[i].User != nil {
+			userTenants[i].User.Password = ""
+		}
+	}
+
+	return userTenants, total, nil
 }
 
 // GetByID retrieves a user by ID
@@ -51,6 +83,64 @@ func (s *userService) GetByID(userID uint) (*models.User, error) {
 	user.Password = ""
 
 	return user, nil
+}
+
+// GetByIDInTenant retrieves a user with tenant-specific data (role, is_active)
+func (s *userService) GetByIDInTenant(tenantID, userID uint) (*UserInTenant, error) {
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	userTenant, err := s.userTenantRepo.GetByUserAndTenant(userID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user does not belong to this tenant")
+		}
+		return nil, fmt.Errorf("failed to get user-tenant: %w", err)
+	}
+
+	return &UserInTenant{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Phone:    user.Phone,
+		Role:     string(userTenant.Role),
+		IsActive: userTenant.IsActive,
+		UnitID:   user.UnitID,
+	}, nil
+}
+
+// UpdateMembership updates tenant-specific fields: is_active and unit_id
+func (s *userService) UpdateMembership(tenantID, userID uint, isActive bool, unitID *uint) error {
+	// Validate user belongs to tenant
+	_, err := s.userTenantRepo.GetByUserAndTenant(userID, tenantID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user does not belong to this tenant")
+		}
+		return fmt.Errorf("failed to get user-tenant: %w", err)
+	}
+
+	// Update is_active on user_tenants
+	if err := s.userTenantRepo.UpdateIsActive(userID, tenantID, isActive); err != nil {
+		return fmt.Errorf("failed to update membership: %w", err)
+	}
+
+	// Update unit_id on users
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+	user.UnitID = unitID
+	if err := s.userRepo.Update(user); err != nil {
+		return fmt.Errorf("failed to update unit: %w", err)
+	}
+
+	return nil
 }
 
 // Update updates a user (excluding password)

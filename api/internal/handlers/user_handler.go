@@ -1,17 +1,27 @@
 package handlers
 
 import (
+	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/arturbaldoramos/Habitta/internal/middleware"
-	"github.com/arturbaldoramos/Habitta/internal/models"
 	"github.com/arturbaldoramos/Habitta/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
+// UserListItem is the flat response struct for user listing
+type UserListItem struct {
+	ID       uint   `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Role     string `json:"role"`
+	IsActive bool   `json:"is_active"`
+	UnitID   *uint  `json:"unit_id"`
+}
+
 // UserHandler handles user routes
-// NOTE: This handler needs refactoring to work with multi-tenant architecture
 type UserHandler struct {
 	userService services.UserService
 }
@@ -23,9 +33,77 @@ func NewUserHandler(userService services.UserService) *UserHandler {
 	}
 }
 
-// GetByID handles getting a user by ID
+// List handles listing users for the active tenant with pagination
+// GET /api/users?page=1&per_page=10&search=...
+func (h *UserHandler) List(c *gin.Context) {
+	tenantID, ok := middleware.GetTenantID(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Forbidden",
+			"message": "tenant_id not found in context",
+		})
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "10"))
+	if perPage < 1 {
+		perPage = 10
+	}
+	search := c.Query("search")
+
+	userTenants, total, err := h.userService.ListByTenant(tenantID, page, perPage, search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Transform to flat response
+	items := make([]UserListItem, 0, len(userTenants))
+	for _, ut := range userTenants {
+		if ut.User == nil {
+			continue
+		}
+		items = append(items, UserListItem{
+			ID:       ut.User.ID,
+			Name:     ut.User.Name,
+			Email:    ut.User.Email,
+			Phone:    ut.User.Phone,
+			Role:     string(ut.Role),
+			IsActive: ut.IsActive,
+			UnitID:   ut.User.UnitID,
+		})
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":        items,
+		"total":       total,
+		"page":        page,
+		"per_page":    perPage,
+		"total_pages": totalPages,
+	})
+}
+
+// GetByID handles getting a user by ID (tenant-aware)
 // GET /api/users/:id
 func (h *UserHandler) GetByID(c *gin.Context) {
+	tenantID, ok := middleware.GetTenantID(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Forbidden",
+			"message": "tenant_id not found in context",
+		})
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -35,7 +113,7 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.GetByID(uint(id))
+	userInTenant, err := h.userService.GetByIDInTenant(tenantID, uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   "Not Found",
@@ -45,50 +123,22 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": user,
+		"data": userInTenant,
 	})
 }
 
-// Update handles user update
-// PUT /api/users/:id
-func (h *UserHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": "invalid user ID",
+// UpdateMembership handles updating tenant-specific user data (is_active, unit_id)
+// PATCH /api/users/:id/membership
+func (h *UserHandler) UpdateMembership(c *gin.Context) {
+	tenantID, ok := middleware.GetTenantID(c)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Forbidden",
+			"message": "tenant_id not found in context",
 		})
 		return
 	}
 
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	// Override user_id from params for security
-	user.ID = uint(id)
-
-	if err := h.userService.Update(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"data": user,
-	})
-}
-
-// UpdatePassword handles user password update
-// PATCH /api/users/:id/password
-func (h *UserHandler) UpdatePassword(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -99,8 +149,8 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 	}
 
 	var req struct {
-		OldPassword string `json:"old_password" binding:"required"`
-		NewPassword string `json:"new_password" binding:"required,min=6"`
+		IsActive *bool `json:"is_active"`
+		UnitID   *uint `json:"unit_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -111,7 +161,13 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdatePassword(uint(id), req.OldPassword, req.NewPassword); err != nil {
+	// Default is_active to true if not provided
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+
+	if err := h.userService.UpdateMembership(tenantID, uint(id), isActive, req.UnitID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Bad Request",
 			"message": err.Error(),
@@ -120,7 +176,7 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "password updated successfully",
+		"message": "membership updated successfully",
 	})
 }
 
@@ -162,9 +218,9 @@ func (h *UserHandler) Delete(c *gin.Context) {
 func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup) {
 	users := router.Group("/users")
 	{
+		users.GET("", h.List)
 		users.GET("/:id", h.GetByID)
-		users.PUT("/:id", h.Update)
-		users.PATCH("/:id/password", h.UpdatePassword)
+		users.PATCH("/:id/membership", h.UpdateMembership)
 		users.DELETE("/:id", h.Delete)
 	}
 }

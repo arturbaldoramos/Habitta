@@ -1,8 +1,6 @@
 <div class="user-form-page">
   <div class="header-section">
-    <h1 class="page-title">
-      {{ isEditMode() ? 'Editar Usuário' : 'Novo Usuário' }}
-    </h1>
+    <h1 class="page-title">Editar Usuário</h1>
   </div>
 
   <p-card>
@@ -14,150 +12,74 @@
       />
     }
 
-    <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="form-grid">
-      <!-- Name -->
-      <div class="form-field">
-        <label for="name" class="form-label">Nome Completo *</label>
-        <input
-          id="name"
-          type="text"
-          pInputText
-          formControlName="name"
-          placeholder="Nome completo do usuário"
-          class="w-full"
-          [class.ng-invalid]="isFieldInvalid('name')"
-          [class.ng-dirty]="getControl('name')?.touched"
-        />
-        @if (isFieldInvalid('name')) {
-          <small class="form-error">
-            @if (getControl('name')?.errors?.['required']) {
-              Nome é obrigatório
-            } @else if (getControl('name')?.errors?.['minlength']) {
-              Nome deve ter no mínimo 3 caracteres
-            }
-          </small>
+    @if (user(); as userData) {
+      <div class="user-info mb-4">
+        <div class="form-field">
+          <label class="form-label">Nome</label>
+          <p class="user-info-text">{{ userData.name }}</p>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Email</label>
+          <p class="user-info-text">{{ userData.email }}</p>
+        </div>
+        @if (userData.phone) {
+          <div class="form-field">
+            <label class="form-label">Telefone</label>
+            <p class="user-info-text">{{ userData.phone }}</p>
+          </div>
         }
+        <div class="form-field">
+          <label class="form-label">Perfil</label>
+          <p class="user-info-text">{{ userData.role }}</p>
+        </div>
       </div>
 
-      <!-- Email -->
-      <div class="form-field">
-        <label for="email" class="form-label">Email *</label>
-        <input
-          id="email"
-          type="email"
-          pInputText
-          formControlName="email"
-          placeholder="email@exemplo.com"
-          class="w-full"
-          [class.ng-invalid]="isFieldInvalid('email')"
-          [class.ng-dirty]="getControl('email')?.touched"
-        />
-        @if (isFieldInvalid('email')) {
-          <small class="form-error">
-            @if (getControl('email')?.errors?.['required']) {
-              Email é obrigatório
-            } @else if (getControl('email')?.errors?.['email']) {
-              Email inválido
-            }
-          </small>
-        }
-      </div>
+      <form [formGroup]="membershipForm" (ngSubmit)="onSubmit()" class="form-grid">
+        <!-- Unit -->
+        <div class="form-field">
+          <label for="unit_id" class="form-label">Unidade</label>
+          <p-select
+            id="unit_id"
+            formControlName="unit_id"
+            [options]="units()"
+            optionLabel="number"
+            optionValue="id"
+            placeholder="Selecione uma unidade"
+            [showClear]="true"
+            styleClass="w-full"
+          />
+        </div>
 
-      <!-- Password -->
-      <div class="form-field">
-        <label for="password" class="form-label">
-          Senha {{ isEditMode() ? '(deixe vazio para não alterar)' : '*' }}
-        </label>
-        <p-password
-          id="password"
-          formControlName="password"
-          [placeholder]="isEditMode() ? 'Digite para alterar a senha' : 'Mínimo 6 caracteres'"
-          [toggleMask]="true"
-          [feedback]="!isEditMode()"
-          styleClass="w-full"
-          inputStyleClass="w-full"
-          [class.ng-invalid]="isFieldInvalid('password')"
-          [class.ng-dirty]="getControl('password')?.touched"
-        />
-        @if (isFieldInvalid('password')) {
-          <small class="form-error">
-            @if (getControl('password')?.errors?.['required']) {
-              Senha é obrigatória
-            } @else if (getControl('password')?.errors?.['minlength']) {
-              Senha deve ter no mínimo 6 caracteres
-            }
-          </small>
-        }
-      </div>
-
-      <!-- Phone -->
-      <div class="form-field">
-        <label for="phone" class="form-label">Telefone</label>
-        <p-inputMask
-          id="phone"
-          formControlName="phone"
-          mask="(99) 99999-9999"
-          placeholder="(00) 00000-0000"
-          styleClass="w-full"
-        />
-      </div>
-
-      <!-- CPF -->
-      <div class="form-field">
-        <label for="cpf" class="form-label">CPF</label>
-        <p-inputMask
-          id="cpf"
-          formControlName="cpf"
-          mask="999.999.999-99"
-          placeholder="000.000.000-00"
-          styleClass="w-full"
-        />
-      </div>
-
-      <!-- Unit ID -->
-      <div class="form-field">
-        <label for="unit_id" class="form-label">ID da Unidade</label>
-        <input
-          id="unit_id"
-          type="number"
-          pInputText
-          formControlName="unit_id"
-          placeholder="ID da unidade (opcional)"
-          class="w-full"
-        />
-      </div>
-
-      <!-- Active (only in edit mode) -->
-      @if (isEditMode()) {
+        <!-- Active -->
         <div class="form-field col-span-full">
           <div class="flex align-items-center">
             <p-checkbox
-              formControlName="active"
+              formControlName="is_active"
               [binary]="true"
-              inputId="active"
+              inputId="is_active"
             />
-            <label for="active" class="ml-2 cursor-pointer">Usuário Ativo</label>
+            <label for="is_active" class="ml-2 cursor-pointer">Usuário ativo no condomínio</label>
           </div>
         </div>
-      }
 
-      <!-- Form Actions -->
-      <div class="form-actions col-span-full">
-        <p-button
-          label="Cancelar"
-          severity="secondary"
-          [outlined]="true"
-          (click)="cancel()"
-          [disabled]="loading()"
-        />
-        <p-button
-          type="submit"
-          [label]="isEditMode() ? 'Atualizar' : 'Criar'"
-          [loading]="loading()"
-          [disabled]="loading()"
-        />
-      </div>
-    </form>
+        <!-- Form Actions -->
+        <div class="form-actions col-span-full">
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [outlined]="true"
+            (click)="cancel()"
+            [disabled]="loading()"
+          />
+          <p-button
+            type="submit"
+            label="Salvar"
+            [loading]="loading()"
+            [disabled]="loading()"
+          />
+        </div>
+      </form>
+    }
   </p-card>
 
   <p-toast />

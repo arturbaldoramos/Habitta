@@ -64,7 +64,7 @@ func main() {
 	tenantMgmtService := services.NewTenantManagementService(tenantRepo, userTenantRepo, db)
 	inviteService := services.NewInviteService(inviteRepo, userRepo, userTenantRepo, db, emailService, cfg.Email.AppBaseURL)
 	tenantService := services.NewTenantService(tenantRepo)
-	userService := services.NewUserService(userRepo, tenantRepo)
+	userService := services.NewUserService(userRepo, tenantRepo, userTenantRepo)
 	unitService := services.NewUnitService(unitRepo, tenantRepo)
 	log.Println("Services initialized")
 

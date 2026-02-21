@@ -3,7 +3,6 @@ import { authGuard } from './core/guards';
 import { tenantRequiredGuard } from './core/guards/tenant-required.guard';
 import { orphanUserGuard } from './core/guards/orphan-user.guard';
 import { sindicoOrAdminGuard } from './core/guards/role.guard';
-import { UserRole } from './core/models';
 
 export const routes: Routes = [
   // Redirect root to dashboard or login
@@ -58,10 +57,6 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () => import('./features/users/user-list/user-list.component').then(m => m.UserListComponent)
-          },
-          {
-            path: 'new',
-            loadComponent: () => import('./features/users/user-form/user-form.component').then(m => m.UserFormComponent)
           },
           {
             path: 'edit/:id',

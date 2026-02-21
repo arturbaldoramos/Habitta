@@ -1,11 +1,6 @@
 <div class="user-list">
   <div class="header-section">
     <h1 class="page-title">Usuários</h1>
-    <p-button
-      label="Novo Usuário"
-      icon="pi pi-plus"
-      (click)="createUser()"
-    />
   </div>
 
   <div class="filters-section">
@@ -35,31 +30,29 @@
   >
     <ng-template pTemplate="header">
       <tr>
-        <th>ID</th>
         <th>Nome</th>
         <th>Email</th>
-        <th>Perfil</th>
         <th>Telefone</th>
+        <th>Perfil</th>
         <th>Status</th>
         <th style="width: 150px">Ações</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-user>
       <tr>
-        <td>{{ user.id }}</td>
         <td>{{ user.name }}</td>
         <td>{{ user.email }}</td>
+        <td>{{ user.phone || '-' }}</td>
         <td>
           <p-tag
             [value]="getRoleLabel(user.role)"
             [severity]="getRoleSeverity(user.role)"
           />
         </td>
-        <td>{{ user.phone || '-' }}</td>
         <td>
           <p-tag
-            [value]="getStatusLabel(user.active)"
-            [severity]="getStatusSeverity(user.active)"
+            [value]="getStatusLabel(user.is_active)"
+            [severity]="getStatusSeverity(user.is_active)"
           />
         </td>
         <td>
@@ -88,7 +81,7 @@
     </ng-template>
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="7" class="text-center">Nenhum usuário encontrado</td>
+        <td colspan="6" class="text-center">Nenhum usuário encontrado</td>
       </tr>
     </ng-template>
   </p-table>

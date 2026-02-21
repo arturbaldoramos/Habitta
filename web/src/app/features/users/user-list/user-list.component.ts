@@ -9,7 +9,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { UserService } from '../../../core/services';
-import { User, UserRole } from '../../../core/models';
+import { UserListItem, UserRole } from '../../../core/models';
 
 @Component({
   selector: 'app-user-list',
@@ -32,7 +32,7 @@ export class UserListComponent implements OnInit {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
-  readonly users = signal<User[]>([]);
+  readonly users = signal<UserListItem[]>([]);
   readonly loading = signal(false);
   readonly totalRecords = signal(0);
   readonly searchTerm = signal('');
@@ -78,15 +78,11 @@ export class UserListComponent implements OnInit {
     this.loadUsers();
   }
 
-  createUser(): void {
-    this.router.navigate(['/users/new']);
-  }
-
-  editUser(user: User): void {
+  editUser(user: UserListItem): void {
     this.router.navigate(['/users/edit', user.id]);
   }
 
-  deleteUser(user: User): void {
+  deleteUser(user: UserListItem): void {
     this.confirmationService.confirm({
       message: `Tem certeza que deseja excluir o usuário ${user.name}?`,
       header: 'Confirmar Exclusão',
@@ -116,7 +112,7 @@ export class UserListComponent implements OnInit {
     });
   }
 
-  getRoleSeverity(role: UserRole): 'success' | 'info' | 'warn' {
+  getRoleSeverity(role: string): 'success' | 'info' | 'warn' {
     switch (role) {
       case UserRole.ADMIN:
         return 'warn';
@@ -129,7 +125,7 @@ export class UserListComponent implements OnInit {
     }
   }
 
-  getRoleLabel(role: UserRole): string {
+  getRoleLabel(role: string): string {
     switch (role) {
       case UserRole.ADMIN:
         return 'Administrador';
@@ -142,11 +138,11 @@ export class UserListComponent implements OnInit {
     }
   }
 
-  getStatusSeverity(active: boolean): 'success' | 'danger' {
-    return active ? 'success' : 'danger';
+  getStatusSeverity(isActive: boolean): 'success' | 'danger' {
+    return isActive ? 'success' : 'danger';
   }
 
-  getStatusLabel(active: boolean): string {
-    return active ? 'Ativo' : 'Inativo';
+  getStatusLabel(isActive: boolean): string {
+    return isActive ? 'Ativo' : 'Inativo';
   }
 }
