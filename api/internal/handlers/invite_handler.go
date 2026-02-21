@@ -3,11 +3,26 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/arturbaldoramos/Habitta/internal/middleware"
 	"github.com/arturbaldoramos/Habitta/internal/services"
 	"github.com/gin-gonic/gin"
 )
+
+// InviteListItem represents a flat invite for the list response
+type InviteListItem struct {
+	ID             uint       `json:"id"`
+	Email          string     `json:"email"`
+	Role           string     `json:"role"`
+	Token          string     `json:"token"`
+	Status         string     `json:"status"`
+	InvitedByName  string     `json:"invited_by_name"`
+	AcceptedByName string     `json:"accepted_by_name,omitempty"`
+	ExpiresAt      time.Time  `json:"expires_at"`
+	AcceptedAt     *time.Time `json:"accepted_at,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+}
 
 // InviteHandler handles invite routes
 type InviteHandler struct {
@@ -212,7 +227,28 @@ func (h *InviteHandler) GetTenantInvites(c *gin.Context) {
 		return
 	}
 
+	items := make([]InviteListItem, 0, len(invites))
+	for _, inv := range invites {
+		item := InviteListItem{
+			ID:        inv.ID,
+			Email:     inv.Email,
+			Role:      string(inv.Role),
+			Token:     inv.Token,
+			Status:    string(inv.Status),
+			ExpiresAt: inv.ExpiresAt,
+			AcceptedAt: inv.AcceptedAt,
+			CreatedAt: inv.CreatedAt,
+		}
+		if inv.InvitedBy != nil {
+			item.InvitedByName = inv.InvitedBy.Name
+		}
+		if inv.AcceptedBy != nil {
+			item.AcceptedByName = inv.AcceptedBy.Name
+		}
+		items = append(items, item)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"data": invites,
+		"data": items,
 	})
 }

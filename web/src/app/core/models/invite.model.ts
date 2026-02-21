@@ -31,6 +31,20 @@ export interface Invite {
 type Tenant = any;
 type User = any;
 
+// Flat invite list item from GET /api/tenants/invites
+export interface InviteListItem {
+  id: number;
+  email: string;
+  role: string;
+  token: string;
+  status: InviteStatus;
+  invited_by_name: string;
+  accepted_by_name?: string;
+  expires_at: string;
+  accepted_at?: string;
+  created_at: string;
+}
+
 // Create Invite DTO
 export interface CreateInviteDto {
   email: string;

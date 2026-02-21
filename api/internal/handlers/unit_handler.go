@@ -10,6 +10,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// UnitResident represents a resident in the unit detail response
+type UnitResident struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Phone string `json:"phone"`
+}
+
+// UnitDetail represents the detailed response for a single unit
+type UnitDetail struct {
+	ID         uint           `json:"id"`
+	Number     string         `json:"number"`
+	Block      string         `json:"block"`
+	Floor      *int           `json:"floor"`
+	Area       *float64       `json:"area"`
+	OwnerName  string         `json:"owner_name"`
+	OwnerEmail string         `json:"owner_email"`
+	OwnerPhone string         `json:"owner_phone"`
+	Occupied   bool           `json:"occupied"`
+	Active     bool           `json:"active"`
+	Residents  []UnitResident `json:"residents"`
+}
+
 // UnitHandler handles unit routes
 type UnitHandler struct {
 	unitService services.UnitService
@@ -89,8 +111,31 @@ func (h *UnitHandler) GetByID(c *gin.Context) {
 		return
 	}
 
+	residents := make([]UnitResident, 0, len(unit.Users))
+	for _, u := range unit.Users {
+		residents = append(residents, UnitResident{
+			ID:    u.ID,
+			Name:  u.Name,
+			Phone: u.Phone,
+		})
+	}
+
+	detail := UnitDetail{
+		ID:         unit.ID,
+		Number:     unit.Number,
+		Block:      unit.Block,
+		Floor:      unit.Floor,
+		Area:       unit.Area,
+		OwnerName:  unit.OwnerName,
+		OwnerEmail: unit.OwnerEmail,
+		OwnerPhone: unit.OwnerPhone,
+		Occupied:   unit.Occupied,
+		Active:     unit.Active,
+		Residents:  residents,
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"data": unit,
+		"data": detail,
 	})
 }
 
