@@ -1,11 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
-  User,
-  CreateUserDto,
-  UpdateUserDto,
-  UpdatePasswordDto,
+  UserListItem,
+  UpdateMembershipDto,
   PaginatedResponse,
   SuccessResponse
 } from '../models';
@@ -18,9 +17,9 @@ export class UserService {
   private readonly API_URL = 'http://localhost:8080/api';
 
   /**
-   * Get paginated list of users
+   * Get paginated list of users (flat format)
    */
-  getUsers(page: number = 1, perPage: number = 10, search?: string): Observable<PaginatedResponse<User>> {
+  getUsers(page: number = 1, perPage: number = 10, search?: string): Observable<PaginatedResponse<UserListItem>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('per_page', perPage.toString());
@@ -29,35 +28,23 @@ export class UserService {
       params = params.set('search', search);
     }
 
-    return this.http.get<PaginatedResponse<User>>(`${this.API_URL}/users`, { params });
+    return this.http.get<PaginatedResponse<UserListItem>>(`${this.API_URL}/users`, { params });
   }
 
   /**
-   * Get user by ID
+   * Get user by ID (returns flat UserListItem, unwraps { data: ... } wrapper)
    */
-  getUserById(id: number): Observable<User> {
-    return this.http.get<User>(`${this.API_URL}/users/${id}`);
+  getUserById(id: number): Observable<UserListItem> {
+    return this.http.get<{ data: UserListItem }>(`${this.API_URL}/users/${id}`).pipe(
+      map(res => res.data)
+    );
   }
 
   /**
-   * Create new user
+   * Update user membership (is_active, unit_id)
    */
-  createUser(data: CreateUserDto): Observable<User> {
-    return this.http.post<User>(`${this.API_URL}/users`, data);
-  }
-
-  /**
-   * Update user
-   */
-  updateUser(id: number, data: UpdateUserDto): Observable<User> {
-    return this.http.put<User>(`${this.API_URL}/users/${id}`, data);
-  }
-
-  /**
-   * Update user password
-   */
-  updatePassword(id: number, data: UpdatePasswordDto): Observable<SuccessResponse> {
-    return this.http.put<SuccessResponse>(`${this.API_URL}/users/${id}/password`, data);
+  updateMembership(id: number, data: UpdateMembershipDto): Observable<SuccessResponse> {
+    return this.http.patch<SuccessResponse>(`${this.API_URL}/users/${id}/membership`, data);
   }
 
   /**
@@ -70,7 +57,7 @@ export class UserService {
   /**
    * Get users by unit
    */
-  getUsersByUnit(unitId: number): Observable<User[]> {
-    return this.http.get<User[]>(`${this.API_URL}/units/${unitId}/users`);
+  getUsersByUnit(unitId: number): Observable<UserListItem[]> {
+    return this.http.get<UserListItem[]>(`${this.API_URL}/units/${unitId}/users`);
   }
 }

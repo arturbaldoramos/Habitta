@@ -11,7 +11,9 @@ type UserTenantRepository interface {
 	GetByUserAndTenant(userID, tenantID uint) (*models.UserTenant, error)
 	GetAllByUser(userID uint) ([]models.UserTenant, error)
 	GetAllByTenant(tenantID uint) ([]models.UserTenant, error)
+	GetAllByTenantPaginated(tenantID uint, page, perPage int, search string) ([]models.UserTenant, int64, error)
 	Update(userTenant *models.UserTenant) error
+	UpdateIsActive(userID, tenantID uint, isActive bool) error
 	Delete(userID, tenantID uint) error
 	UserBelongsToTenant(userID, tenantID uint) (bool, error)
 }
@@ -62,11 +64,45 @@ func (r *userTenantRepository) GetAllByTenant(tenantID uint) ([]models.UserTenan
 	return userTenants, err
 }
 
+// GetAllByTenantPaginated retrieves users for a tenant with pagination and search
+func (r *userTenantRepository) GetAllByTenantPaginated(tenantID uint, page, perPage int, search string) ([]models.UserTenant, int64, error) {
+	var userTenants []models.UserTenant
+	var total int64
+
+	baseQuery := r.db.Model(&models.UserTenant{}).
+		Where("user_tenants.tenant_id = ?", tenantID).
+		Joins("JOIN users ON users.id = user_tenants.user_id AND users.deleted_at IS NULL")
+
+	if search != "" {
+		likeSearch := "%" + search + "%"
+		baseQuery = baseQuery.Where("users.name LIKE ? OR users.email LIKE ? OR users.phone LIKE ?", likeSearch, likeSearch, likeSearch)
+	}
+
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * perPage
+	err := baseQuery.Preload("User").
+		Offset(offset).
+		Limit(perPage).
+		Find(&userTenants).Error
+
+	return userTenants, total, err
+}
+
 // Update updates a user-tenant relationship
 func (r *userTenantRepository) Update(userTenant *models.UserTenant) error {
 	return r.db.Model(&models.UserTenant{}).
 		Where("user_id = ? AND tenant_id = ?", userTenant.UserID, userTenant.TenantID).
 		Updates(userTenant).Error
+}
+
+// UpdateIsActive updates the is_active field for a user-tenant relationship
+func (r *userTenantRepository) UpdateIsActive(userID, tenantID uint, isActive bool) error {
+	return r.db.Model(&models.UserTenant{}).
+		Where("user_id = ? AND tenant_id = ?", userID, tenantID).
+		Update("is_active", isActive).Error
 }
 
 // Delete removes a user-tenant relationship

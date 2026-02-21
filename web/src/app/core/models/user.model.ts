@@ -26,23 +26,21 @@ type Tenant = any;
 type Unit = any;
 type UserTenant = any;
 
-// Create User DTO
-export interface CreateUserDto {
-  email: string;
-  password: string;
+// Flat response from GET /api/users and GET /api/users/:id
+export interface UserListItem {
+  id: number;
   name: string;
-  phone?: string;
-  cpf?: string;
+  email: string;
+  phone: string;
+  role: string;
+  is_active: boolean;
+  unit_id: number | null;
 }
 
-// Update User DTO
-export interface UpdateUserDto {
-  email?: string;
-  name?: string;
-  phone?: string;
-  cpf?: string;
-  unit_id?: number;
-  active?: boolean;
+// Update membership DTO (only fields a síndico can edit)
+export interface UpdateMembershipDto {
+  is_active?: boolean;
+  unit_id?: number | null;
 }
 
 // Update Password DTO
