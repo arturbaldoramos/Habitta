@@ -1,0 +1,124 @@
+<div class="detail-page">
+  <div class="header-section">
+    <p-button
+      icon="pi pi-arrow-left"
+      label="Voltar"
+      [text]="true"
+      severity="secondary"
+      (onClick)="goBack()"
+    />
+    <h1 class="page-title">Detalhes do Usuário</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <i class="pi pi-spinner pi-spin text-2xl"></i>
+    </div>
+  }
+
+  @if (user(); as user) {
+    <p-card>
+      <div class="detail-grid">
+        <div class="detail-field">
+          <span class="detail-label">Nome</span>
+          <span class="detail-value">{{ user.name }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Email</span>
+          <span class="detail-value">{{ user.email }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Telefone</span>
+          <span class="detail-value">{{ user.phone || '-' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Perfil</span>
+          <div>
+            <p-tag
+              [value]="getRoleLabel(user.role)"
+              [severity]="getRoleSeverity(user.role)"
+            />
+          </div>
+        </div>
+
+        @if (!editing()) {
+          <div class="detail-field">
+            <span class="detail-label">Status</span>
+            <div>
+              <p-tag
+                [value]="getStatusLabel(user.is_active)"
+                [severity]="getStatusSeverity(user.is_active)"
+              />
+            </div>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Unidade</span>
+            <span class="detail-value">{{ getUnitLabel(user.unit_id) }}</span>
+          </div>
+        }
+      </div>
+
+      @if (editing()) {
+        <form [formGroup]="editForm" class="form-grid">
+          <div class="form-field">
+            <div class="flex align-items-center gap-2">
+              <p-checkbox
+                formControlName="is_active"
+                [binary]="true"
+                inputId="is_active"
+              />
+              <label for="is_active" class="cursor-pointer">Usuário Ativo</label>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="unit_id" class="form-label">Unidade</label>
+            <p-select
+              inputId="unit_id"
+              formControlName="unit_id"
+              [options]="unitOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Selecione uma unidade"
+              styleClass="w-full"
+            />
+          </div>
+        </form>
+      }
+
+      <div class="form-actions">
+        @if (editing()) {
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="cancelEdit()"
+            [disabled]="saving()"
+          />
+          <p-button
+            label="Salvar"
+            icon="pi pi-check"
+            (onClick)="saveEdit()"
+            [loading]="saving()"
+            [disabled]="saving()"
+          />
+        } @else {
+          <p-button
+            label="Excluir"
+            icon="pi pi-trash"
+            severity="danger"
+            [outlined]="true"
+            (onClick)="confirmDelete()"
+          />
+          <p-button
+            label="Editar"
+            icon="pi pi-pencil"
+            (onClick)="startEdit()"
+          />
+        }
+      </div>
+    </p-card>
+  }
+
+  <p-confirmDialog />
+  <p-toast />
+</div>

@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import {
   Unit,
+  UnitDetail,
   CreateUnitDto,
   UpdateUnitDto,
   PaginatedResponse,
@@ -34,8 +35,10 @@ export class UnitService {
   /**
    * Get unit by ID
    */
-  getUnitById(id: number): Observable<Unit> {
-    return this.http.get<Unit>(`${this.API_URL}/units/${id}`);
+  getUnitById(id: number): Observable<UnitDetail> {
+    return this.http.get<{ data: UnitDetail }>(`${this.API_URL}/units/${id}`).pipe(
+      map(response => response.data)
+    );
   }
 
   /**

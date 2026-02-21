@@ -35,7 +35,6 @@ func (r *unitRepository) Create(unit *models.Unit) error {
 func (r *unitRepository) GetByID(tenantID, unitID uint) (*models.Unit, error) {
 	var unit models.Unit
 	err := r.db.Where("tenant_id = ? AND id = ?", tenantID, unitID).
-		Preload("Tenant").
 		Preload("Users").
 		First(&unit).Error
 	if err != nil {
@@ -48,8 +47,6 @@ func (r *unitRepository) GetByID(tenantID, unitID uint) (*models.Unit, error) {
 func (r *unitRepository) GetByNumber(tenantID uint, number string) (*models.Unit, error) {
 	var unit models.Unit
 	err := r.db.Where("tenant_id = ? AND number = ?", tenantID, number).
-		Preload("Tenant").
-		Preload("Users").
 		First(&unit).Error
 	if err != nil {
 		return nil, err
@@ -61,7 +58,6 @@ func (r *unitRepository) GetByNumber(tenantID uint, number string) (*models.Unit
 func (r *unitRepository) GetAll(tenantID uint) ([]models.Unit, error) {
 	var units []models.Unit
 	err := r.db.Where("tenant_id = ?", tenantID).
-		Preload("Users").
 		Find(&units).Error
 	return units, err
 }
@@ -70,7 +66,6 @@ func (r *unitRepository) GetAll(tenantID uint) ([]models.Unit, error) {
 func (r *unitRepository) GetByBlock(tenantID uint, block string) ([]models.Unit, error) {
 	var units []models.Unit
 	err := r.db.Where("tenant_id = ? AND block = ?", tenantID, block).
-		Preload("Users").
 		Find(&units).Error
 	return units, err
 }

@@ -1,0 +1,245 @@
+<div class="detail-page">
+  <div class="header-section">
+    <p-button
+      icon="pi pi-arrow-left"
+      label="Voltar"
+      [text]="true"
+      severity="secondary"
+      (onClick)="goBack()"
+    />
+    <h1 class="page-title">Detalhes da Unidade</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <i class="pi pi-spinner pi-spin text-2xl"></i>
+    </div>
+  }
+
+  @if (unit(); as unit) {
+    <p-card>
+      @if (!editing()) {
+        <!-- Read-only mode -->
+        <div class="detail-grid">
+          <div class="detail-field">
+            <span class="detail-label">Número</span>
+            <span class="detail-value">{{ unit.number }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Bloco</span>
+            <span class="detail-value">{{ unit.block || '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Andar</span>
+            <span class="detail-value">{{ unit.floor ?? '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Área</span>
+            <span class="detail-value">{{ unit.area ? unit.area + 'm²' : '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Proprietário</span>
+            <span class="detail-value">{{ unit.owner_name || '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Email do Proprietário</span>
+            <span class="detail-value">{{ unit.owner_email || '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Telefone do Proprietário</span>
+            <span class="detail-value">{{ unit.owner_phone || '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Ocupação</span>
+            <div>
+              <p-tag
+                [value]="getOccupiedLabel(unit.occupied)"
+                [severity]="getOccupiedSeverity(unit.occupied)"
+              />
+            </div>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Status</span>
+            <div>
+              <p-tag
+                [value]="getStatusLabel(unit.active)"
+                [severity]="getStatusSeverity(unit.active)"
+              />
+            </div>
+          </div>
+        </div>
+      } @else {
+        <!-- Edit mode -->
+        <form [formGroup]="editForm" class="form-grid">
+          <div class="form-field">
+            <label for="number" class="form-label">Número *</label>
+            <input
+              id="number"
+              type="text"
+              pInputText
+              formControlName="number"
+              placeholder="Ex: 101, 201A"
+              class="w-full"
+              [class.ng-invalid]="isFieldInvalid('number')"
+              [class.ng-dirty]="editForm.get('number')?.touched"
+            />
+            @if (isFieldInvalid('number')) {
+              <small class="form-error">Número da unidade é obrigatório</small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="block" class="form-label">Bloco</label>
+            <input
+              id="block"
+              type="text"
+              pInputText
+              formControlName="block"
+              placeholder="Ex: A, B, Torre 1"
+              class="w-full"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="floor" class="form-label">Andar</label>
+            <p-inputNumber
+              inputId="floor"
+              formControlName="floor"
+              placeholder="Número do andar"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="area" class="form-label">Área (m²)</label>
+            <p-inputNumber
+              inputId="area"
+              formControlName="area"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              placeholder="Área em metros quadrados"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="owner_name" class="form-label">Nome do Proprietário</label>
+            <input
+              id="owner_name"
+              type="text"
+              pInputText
+              formControlName="owner_name"
+              placeholder="Nome completo do proprietário"
+              class="w-full"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="owner_email" class="form-label">Email do Proprietário</label>
+            <input
+              id="owner_email"
+              type="email"
+              pInputText
+              formControlName="owner_email"
+              placeholder="email@exemplo.com"
+              class="w-full"
+              [class.ng-invalid]="isFieldInvalid('owner_email')"
+              [class.ng-dirty]="editForm.get('owner_email')?.touched"
+            />
+            @if (isFieldInvalid('owner_email')) {
+              <small class="form-error">Email inválido</small>
+            }
+          </div>
+
+          <div class="form-field col-span-full">
+            <label for="owner_phone" class="form-label">Telefone do Proprietário</label>
+            <input
+              id="owner_phone"
+              type="text"
+              pInputText
+              formControlName="owner_phone"
+              placeholder="(00) 00000-0000"
+              class="w-full"
+            />
+          </div>
+
+          <div class="form-field">
+            <div class="flex align-items-center">
+              <p-checkbox
+                formControlName="occupied"
+                [binary]="true"
+                inputId="occupied"
+              />
+              <label for="occupied" class="ml-2 cursor-pointer">Unidade Ocupada</label>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <div class="flex align-items-center">
+              <p-checkbox
+                formControlName="active"
+                [binary]="true"
+                inputId="active"
+              />
+              <label for="active" class="ml-2 cursor-pointer">Unidade Ativa</label>
+            </div>
+          </div>
+        </form>
+      }
+
+      <!-- Residents section (always read-only) -->
+      <div class="residents-section">
+        <h3 class="residents-title">Moradores</h3>
+        @if (unit.residents.length === 0) {
+          <span class="text-gray-400">Nenhum morador</span>
+        } @else {
+          <div class="residents-list">
+            @for (resident of unit.residents; track resident.id) {
+              <div class="resident-item">
+                <span class="font-medium">{{ resident.name }}</span>
+                <span class="text-sm text-gray-500">{{ resident.phone || '-' }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="form-actions">
+        @if (editing()) {
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="cancelEdit()"
+            [disabled]="saving()"
+          />
+          <p-button
+            label="Salvar"
+            icon="pi pi-check"
+            (onClick)="saveEdit()"
+            [loading]="saving()"
+            [disabled]="saving()"
+          />
+        } @else {
+          <p-button
+            label="Excluir"
+            icon="pi pi-trash"
+            severity="danger"
+            [outlined]="true"
+            (onClick)="confirmDelete()"
+          />
+          <p-button
+            label="Editar"
+            icon="pi pi-pencil"
+            (onClick)="startEdit()"
+          />
+        }
+      </div>
+    </p-card>
+  }
+
+  <p-confirmDialog />
+  <p-toast />
+</div>

@@ -61,6 +61,10 @@ export const routes: Routes = [
           {
             path: 'edit/:id',
             loadComponent: () => import('./features/users/user-form/user-form.component').then(m => m.UserFormComponent)
+          },
+          {
+            path: ':id',
+            loadComponent: () => import('./features/users/user-detail/user-detail.component').then(m => m.UserDetailComponent)
           }
         ]
       },
@@ -81,6 +85,10 @@ export const routes: Routes = [
           {
             path: 'edit/:id',
             loadComponent: () => import('./features/units/unit-form/unit-form.component').then(m => m.UnitFormComponent)
+          },
+          {
+            path: ':id',
+            loadComponent: () => import('./features/units/unit-detail/unit-detail.component').then(m => m.UnitDetailComponent)
           }
         ]
       },
@@ -89,7 +97,16 @@ export const routes: Routes = [
       {
         path: 'invites',
         canActivate: [sindicoOrAdminGuard],
-        loadComponent: () => import('./features/invites/invite-management/invite-management.component').then(m => m.InviteManagementComponent)
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/invites/invite-management/invite-management.component').then(m => m.InviteManagementComponent)
+          },
+          {
+            path: ':id',
+            loadComponent: () => import('./features/invites/invite-detail/invite-detail.component').then(m => m.InviteDetailComponent)
+          }
+        ]
       }
     ]
   },

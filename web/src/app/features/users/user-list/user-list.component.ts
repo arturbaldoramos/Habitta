@@ -5,9 +5,8 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { UserService } from '../../../core/services';
 import { UserListItem, UserRole } from '../../../core/models';
 
@@ -19,17 +18,15 @@ import { UserListItem, UserRole } from '../../../core/models';
     ButtonModule,
     InputTextModule,
     TagModule,
-    ConfirmDialogModule,
     ToastModule
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [MessageService],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.css'
 })
 export class UserListComponent implements OnInit {
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
-  private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
   readonly users = signal<UserListItem[]>([]);
@@ -78,38 +75,8 @@ export class UserListComponent implements OnInit {
     this.loadUsers();
   }
 
-  editUser(user: UserListItem): void {
-    this.router.navigate(['/users/edit', user.id]);
-  }
-
-  deleteUser(user: UserListItem): void {
-    this.confirmationService.confirm({
-      message: `Tem certeza que deseja excluir o usuário ${user.name}?`,
-      header: 'Confirmar Exclusão',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sim',
-      rejectLabel: 'Não',
-      accept: () => {
-        this.userService.deleteUser(user.id).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Sucesso',
-              detail: 'Usuário excluído com sucesso'
-            });
-            this.loadUsers();
-          },
-          error: (error) => {
-            console.error('Error deleting user:', error);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Erro',
-              detail: 'Erro ao excluir usuário'
-            });
-          }
-        });
-      }
-    });
+  navigateToUser(user: UserListItem): void {
+    this.router.navigate(['/users', user.id]);
   }
 
   getRoleSeverity(role: string): 'success' | 'info' | 'warn' {

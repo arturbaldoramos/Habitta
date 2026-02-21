@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError, map } from 'rxjs';
-import { Invite, CreateInviteDto, AcceptInviteDto, User } from '../models';
+import { Invite, InviteListItem, CreateInviteDto, AcceptInviteDto, User } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -69,8 +69,8 @@ export class InviteService {
   /**
    * Get all invites for current tenant
    */
-  getTenantInvites(): Observable<Invite[]> {
-    return this.http.get<{data: Invite[]}>(`${this.API_URL}/tenants/invites`)
+  getTenantInvites(): Observable<InviteListItem[]> {
+    return this.http.get<{data: InviteListItem[]}>(`${this.API_URL}/tenants/invites`)
       .pipe(
         map(response => response.data),
         catchError(error => {

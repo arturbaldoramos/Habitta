@@ -42,11 +42,11 @@
         <th>Proprietário</th>
         <th>Ocupação</th>
         <th>Status</th>
-        <th style="width: 150px">Ações</th>
+        <th style="width: 50px"></th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-unit>
-      <tr>
+      <tr (click)="navigateToUnit(unit)" class="cursor-pointer">
         <td>{{ unit.number }}</td>
         <td>{{ unit.block || '-' }}</td>
         <td>{{ unit.floor || '-' }}</td>
@@ -65,26 +65,7 @@
           />
         </td>
         <td>
-          <div class="action-buttons">
-            <p-button
-              icon="pi pi-pencil"
-              [rounded]="true"
-              [text]="true"
-              severity="info"
-              (click)="editUnit(unit)"
-              pTooltip="Editar"
-              tooltipPosition="top"
-            />
-            <p-button
-              icon="pi pi-trash"
-              [rounded]="true"
-              [text]="true"
-              severity="danger"
-              (click)="deleteUnit(unit)"
-              pTooltip="Excluir"
-              tooltipPosition="top"
-            />
-          </div>
+          <i class="pi pi-chevron-right text-gray-400"></i>
         </td>
       </tr>
     </ng-template>
@@ -95,6 +76,5 @@
     </ng-template>
   </p-table>
 
-  <p-confirmDialog />
   <p-toast />
 </div>

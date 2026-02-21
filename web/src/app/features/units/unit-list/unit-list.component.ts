@@ -5,9 +5,8 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 import { UnitService } from '../../../core/services';
 import { Unit } from '../../../core/models';
 
@@ -19,17 +18,15 @@ import { Unit } from '../../../core/models';
     ButtonModule,
     InputTextModule,
     TagModule,
-    ConfirmDialogModule,
     ToastModule
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [MessageService],
   templateUrl: './unit-list.component.html',
   styleUrl: './unit-list.component.css'
 })
 export class UnitListComponent implements OnInit {
   private readonly unitService = inject(UnitService);
   private readonly router = inject(Router);
-  private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
   readonly units = signal<Unit[]>([]);
@@ -82,38 +79,8 @@ export class UnitListComponent implements OnInit {
     this.router.navigate(['/units/new']);
   }
 
-  editUnit(unit: Unit): void {
-    this.router.navigate(['/units/edit', unit.id]);
-  }
-
-  deleteUnit(unit: Unit): void {
-    this.confirmationService.confirm({
-      message: `Tem certeza que deseja excluir a unidade ${unit.number}?`,
-      header: 'Confirmar Exclusão',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sim',
-      rejectLabel: 'Não',
-      accept: () => {
-        this.unitService.deleteUnit(unit.id).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Sucesso',
-              detail: 'Unidade excluída com sucesso'
-            });
-            this.loadUnits();
-          },
-          error: (error) => {
-            console.error('Error deleting unit:', error);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Erro',
-              detail: 'Erro ao excluir unidade'
-            });
-          }
-        });
-      }
-    });
+  navigateToUnit(unit: Unit): void {
+    this.router.navigate(['/units', unit.id]);
   }
 
   getOccupiedSeverity(occupied: boolean): 'success' | 'warn' {
