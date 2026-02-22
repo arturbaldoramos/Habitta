@@ -180,10 +180,10 @@ func (h *UserHandler) UpdateMembership(c *gin.Context) {
 	})
 }
 
-// Delete handles user deletion
+// RemoveFromTenant removes a user's membership from the current tenant
 // DELETE /api/users/:id
-func (h *UserHandler) Delete(c *gin.Context) {
-	_, ok := middleware.GetTenantID(c)
+func (h *UserHandler) RemoveFromTenant(c *gin.Context) {
+	tenantID, ok := middleware.GetTenantID(c)
 	if !ok {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error":   "Forbidden",
@@ -201,7 +201,7 @@ func (h *UserHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.Delete(uint(id)); err != nil {
+	if err := h.userService.RemoveFromTenant(tenantID, uint(id)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Bad Request",
 			"message": err.Error(),
@@ -210,7 +210,7 @@ func (h *UserHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "user deleted successfully",
+		"message": "user removed from tenant successfully",
 	})
 }
 
@@ -221,6 +221,6 @@ func (h *UserHandler) RegisterRoutes(router *gin.RouterGroup) {
 		users.GET("", h.List)
 		users.GET("/:id", h.GetByID)
 		users.PATCH("/:id/membership", h.UpdateMembership)
-		users.DELETE("/:id", h.Delete)
+		users.DELETE("/:id", h.RemoveFromTenant)
 	}
 }

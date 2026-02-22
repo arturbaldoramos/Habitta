@@ -165,18 +165,18 @@ export class UserDetailComponent implements OnInit {
     if (!user) return;
 
     this.confirmationService.confirm({
-      message: `Tem certeza que deseja excluir o usuário ${user.name}?`,
-      header: 'Confirmar Exclusão',
+      message: `Tem certeza que deseja remover ${user.name} do condomínio?`,
+      header: 'Confirmar Remoção',
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Sim',
       rejectLabel: 'Não',
       accept: () => {
-        this.userService.deleteUser(user.id).subscribe({
+        this.userService.removeFromTenant(user.id).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
               summary: 'Sucesso',
-              detail: 'Usuário excluído com sucesso'
+              detail: 'Usuário removido do condomínio com sucesso'
             });
             setTimeout(() => this.router.navigate(['/users']), 1000);
           },
@@ -184,7 +184,7 @@ export class UserDetailComponent implements OnInit {
             this.messageService.add({
               severity: 'error',
               summary: 'Erro',
-              detail: 'Erro ao excluir usuário'
+              detail: 'Erro ao remover usuário do condomínio'
             });
           }
         });
