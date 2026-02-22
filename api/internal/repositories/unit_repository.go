@@ -72,9 +72,12 @@ func (r *unitRepository) GetByBlock(tenantID uint, block string) ([]models.Unit,
 
 // Update updates a unit (validates tenant_id to prevent cross-tenant updates)
 func (r *unitRepository) Update(unit *models.Unit) error {
-	// Ensure we only update the unit belonging to the correct tenant
+	// Use Select("*") to include zero-value fields (e.g. bool false)
+	// in the UPDATE query — otherwise GORM skips them.
 	return r.db.Model(&models.Unit{}).
 		Where("tenant_id = ? AND id = ?", unit.TenantID, unit.ID).
+		Select("*").
+		Omit("created_at", "Tenant", "Users").
 		Updates(unit).Error
 }
 
