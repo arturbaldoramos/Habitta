@@ -76,6 +76,7 @@ func main() {
 	tenantHandler := handlers.NewTenantHandler(tenantService)
 	userHandler := handlers.NewUserHandler(userService)
 	unitHandler := handlers.NewUnitHandler(unitService)
+	accountHandler := handlers.NewAccountHandler(userService)
 	log.Println("Handlers initialized")
 
 	// Setup Gin router
@@ -120,6 +121,9 @@ func main() {
 
 			// Invites - my pending invites
 			protectedNoTenant.GET("/invites/me", inviteHandler.GetMyPendingInvites)
+
+			// Account - manage own profile
+			accountHandler.RegisterRoutes(protectedNoTenant)
 		}
 
 		// Protected routes WITH tenant context (requires active_tenant_id)
