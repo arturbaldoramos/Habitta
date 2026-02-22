@@ -302,6 +302,13 @@ export class AuthService {
   }
 
   /**
+   * Update the current user signal (e.g. after profile edit)
+   */
+  updateCurrentUser(user: User): void {
+    this.userSignal.set(user);
+  }
+
+  /**
    * Check if user is orphan (no active tenant)
    */
   isOrphanUser(): boolean {

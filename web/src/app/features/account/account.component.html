@@ -1,0 +1,166 @@
+<div class="detail-page">
+  <div class="header-section">
+    <h1 class="page-title">Minha Conta</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <i class="pi pi-spinner pi-spin text-2xl"></i>
+    </div>
+  }
+
+  @if (user(); as user) {
+    <!-- Dados Pessoais -->
+    <p-card header="Dados Pessoais">
+      @if (!editing()) {
+        <div class="detail-grid">
+          <div class="detail-field">
+            <span class="detail-label">Nome</span>
+            <span class="detail-value">{{ user.name }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Email</span>
+            <span class="detail-value">{{ user.email }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">Telefone</span>
+            <span class="detail-value">{{ user.phone || '-' }}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">CPF</span>
+            <span class="detail-value">{{ user.cpf || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <p-button
+            label="Editar"
+            icon="pi pi-pencil"
+            (onClick)="startEdit()"
+          />
+        </div>
+      } @else {
+        <form [formGroup]="profileForm" class="form-grid">
+          <div class="form-field">
+            <label for="name" class="form-label">Nome</label>
+            <input
+              pInputText
+              id="name"
+              formControlName="name"
+              class="w-full"
+            />
+          </div>
+          <div class="form-field">
+            <label for="email" class="form-label">Email</label>
+            <input
+              pInputText
+              id="email"
+              [value]="user.email"
+              [disabled]="true"
+              class="w-full"
+            />
+            <span class="text-muted">O email não pode ser alterado</span>
+          </div>
+          <div class="form-field">
+            <label for="phone" class="form-label">Telefone</label>
+            <p-inputMask
+              id="phone"
+              formControlName="phone"
+              mask="(99) 99999-9999"
+              placeholder="(00) 00000-0000"
+              styleClass="w-full"
+            />
+          </div>
+          <div class="form-field">
+            <label for="cpf" class="form-label">CPF</label>
+            <input
+              pInputText
+              id="cpf"
+              [value]="user.cpf || ''"
+              [disabled]="true"
+              class="w-full"
+            />
+            <span class="text-muted">O CPF não pode ser alterado</span>
+          </div>
+        </form>
+
+        <div class="form-actions">
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="cancelEdit()"
+            [disabled]="saving()"
+          />
+          <p-button
+            label="Salvar"
+            icon="pi pi-check"
+            (onClick)="saveProfile()"
+            [loading]="saving()"
+            [disabled]="saving() || profileForm.invalid"
+          />
+        </div>
+      }
+    </p-card>
+
+    <!-- Segurança -->
+    <p-card header="Segurança">
+      <p class="section-description">Gerencie sua senha de acesso.</p>
+
+      @if (!changingPassword()) {
+        <div class="form-actions">
+          <p-button
+            label="Alterar Senha"
+            icon="pi pi-lock"
+            [outlined]="true"
+            (onClick)="togglePasswordForm()"
+          />
+        </div>
+      } @else {
+        <form [formGroup]="passwordForm" class="form-grid">
+          <div class="form-field">
+            <label for="old_password" class="form-label">Senha Atual</label>
+            <p-password
+              id="old_password"
+              formControlName="old_password"
+              [toggleMask]="true"
+              [feedback]="false"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+            />
+          </div>
+          <div class="form-field">
+            <label for="new_password" class="form-label">Nova Senha</label>
+            <p-password
+              id="new_password"
+              formControlName="new_password"
+              [toggleMask]="true"
+              [feedback]="true"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+            />
+          </div>
+        </form>
+
+        <div class="form-actions">
+          <p-button
+            label="Cancelar"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="togglePasswordForm()"
+            [disabled]="savingPassword()"
+          />
+          <p-button
+            label="Salvar Senha"
+            icon="pi pi-check"
+            (onClick)="savePassword()"
+            [loading]="savingPassword()"
+            [disabled]="savingPassword() || passwordForm.invalid"
+          />
+        </div>
+      }
+    </p-card>
+  }
+
+  <p-toast />
+</div>
