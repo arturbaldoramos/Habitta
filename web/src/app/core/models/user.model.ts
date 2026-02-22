@@ -48,3 +48,9 @@ export interface UpdatePasswordDto {
   old_password: string;
   new_password: string;
 }
+
+// Update Account DTO (own profile)
+export interface UpdateAccountDto {
+  name: string;
+  phone: string;
+}
