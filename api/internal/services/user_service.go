@@ -29,7 +29,7 @@ type UserService interface {
 	UpdateMembership(tenantID, userID uint, isActive bool, unitID *uint) error
 	Update(user *models.User) error
 	UpdatePassword(userID uint, oldPassword, newPassword string) error
-	Delete(userID uint) error
+	RemoveFromTenant(tenantID, userID uint) error
 }
 
 // userService implements UserService
@@ -218,20 +218,20 @@ func (s *userService) UpdatePassword(userID uint, oldPassword, newPassword strin
 	return nil
 }
 
-// Delete soft deletes a user
-func (s *userService) Delete(userID uint) error {
-	// Validate user exists
-	_, err := s.userRepo.GetByID(userID)
+// RemoveFromTenant removes a user's membership from a tenant (does NOT delete the user account)
+func (s *userService) RemoveFromTenant(tenantID, userID uint) error {
+	// Validate user belongs to tenant
+	_, err := s.userTenantRepo.GetByUserAndTenant(userID, tenantID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found")
+			return errors.New("user does not belong to this tenant")
 		}
-		return fmt.Errorf("failed to get user: %w", err)
+		return fmt.Errorf("failed to get user-tenant: %w", err)
 	}
 
-	// Delete user
-	if err := s.userRepo.Delete(userID); err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+	// Remove user-tenant relationship only
+	if err := s.userTenantRepo.Delete(userID, tenantID); err != nil {
+		return fmt.Errorf("failed to remove user from tenant: %w", err)
 	}
 
 	return nil

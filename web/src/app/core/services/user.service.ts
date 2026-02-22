@@ -48,9 +48,9 @@ export class UserService {
   }
 
   /**
-   * Delete user
+   * Remove user from tenant
    */
-  deleteUser(id: number): Observable<SuccessResponse> {
+  removeFromTenant(id: number): Observable<SuccessResponse> {
     return this.http.delete<SuccessResponse>(`${this.API_URL}/users/${id}`);
   }
 
