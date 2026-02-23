@@ -45,6 +45,8 @@ func main() {
 		&models.UserTenant{}, // Pivot table for many-to-many
 		&models.Invite{},     // Invite system
 		&models.Unit{},
+		&models.Folder{},
+		&models.Document{},
 	); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
@@ -56,6 +58,8 @@ func main() {
 	userTenantRepo := repositories.NewUserTenantRepository(db)
 	inviteRepo := repositories.NewInviteRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
+	folderRepo := repositories.NewFolderRepository(db)
+	documentRepo := repositories.NewDocumentRepository(db)
 	log.Println("Repositories initialized")
 
 	// Initialize services
@@ -66,6 +70,15 @@ func main() {
 	tenantService := services.NewTenantService(tenantRepo)
 	userService := services.NewUserService(userRepo, tenantRepo, userTenantRepo)
 	unitService := services.NewUnitService(unitRepo, tenantRepo)
+
+	// Initialize storage service (S3/MinIO)
+	storageSvc, err := services.NewStorageService(cfg.Storage)
+	if err != nil {
+		log.Fatalf("Failed to initialize storage service: %v", err)
+	}
+
+	folderService := services.NewFolderService(folderRepo)
+	documentService := services.NewDocumentService(documentRepo, folderRepo, storageSvc)
 	log.Println("Services initialized")
 
 	// Initialize handlers
@@ -77,6 +90,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService)
 	unitHandler := handlers.NewUnitHandler(unitService)
 	accountHandler := handlers.NewAccountHandler(userService)
+	documentHandler := handlers.NewDocumentHandler(folderService, documentService)
 	log.Println("Handlers initialized")
 
 	// Setup Gin router
@@ -141,6 +155,13 @@ func main() {
 			protectedWithTenant.POST("/invites", inviteHandler.CreateInvite)
 			protectedWithTenant.DELETE("/invites/:id", inviteHandler.CancelInvite)
 			protectedWithTenant.GET("/tenants/invites", inviteHandler.GetTenantInvites)
+
+			// Document and folder routes (síndico/admin only)
+			docRoutes := protectedWithTenant.Group("")
+			docRoutes.Use(middleware.RequireRole("sindico", "admin"))
+			{
+				documentHandler.RegisterRoutes(docRoutes)
+			}
 		}
 
 		// Admin routes (global admin, no tenant context)

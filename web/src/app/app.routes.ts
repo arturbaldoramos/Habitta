@@ -111,6 +111,13 @@ export const routes: Routes = [
             loadComponent: () => import('./features/invites/invite-detail/invite-detail.component').then(m => m.InviteDetailComponent)
           }
         ]
+      },
+
+      // Document management (síndico and admin only)
+      {
+        path: 'documents',
+        canActivate: [sindicoOrAdminGuard],
+        loadComponent: () => import('./features/documents/document-list/document-list.component').then(m => m.DocumentListComponent)
       }
     ]
   },

@@ -14,6 +14,17 @@ type Config struct {
 	JWT      JWTConfig
 	CORS     CORSConfig
 	Email    EmailConfig
+	Storage  StorageConfig
+}
+
+// StorageConfig holds S3/MinIO storage configuration
+type StorageConfig struct {
+	Endpoint     string
+	Bucket       string
+	Region       string
+	AccessKey    string
+	SecretKey    string
+	UsePathStyle bool
 }
 
 // EmailConfig holds email service configuration
@@ -75,6 +86,12 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("ALLOWED_ORIGINS", "http://localhost:4200")
 	viper.SetDefault("EMAIL_FROM", "noreply@habitta.com")
 	viper.SetDefault("APP_BASE_URL", "http://localhost:4200")
+	viper.SetDefault("S3_ENDPOINT", "http://localhost:9000")
+	viper.SetDefault("S3_BUCKET", "habitta-local")
+	viper.SetDefault("S3_REGION", "us-east-1")
+	viper.SetDefault("S3_ACCESS_KEY", "minioadmin")
+	viper.SetDefault("S3_SECRET_KEY", "minioadmin")
+	viper.SetDefault("S3_USE_PATH_STYLE", true)
 
 	config := &Config{
 		Server: ServerConfig{
@@ -100,6 +117,14 @@ func LoadConfig() (*Config, error) {
 			ResendAPIKey: viper.GetString("RESEND_API_KEY"),
 			FromAddress:  viper.GetString("EMAIL_FROM"),
 			AppBaseURL:   viper.GetString("APP_BASE_URL"),
+		},
+		Storage: StorageConfig{
+			Endpoint:     viper.GetString("S3_ENDPOINT"),
+			Bucket:       viper.GetString("S3_BUCKET"),
+			Region:       viper.GetString("S3_REGION"),
+			AccessKey:    viper.GetString("S3_ACCESS_KEY"),
+			SecretKey:    viper.GetString("S3_SECRET_KEY"),
+			UsePathStyle: viper.GetBool("S3_USE_PATH_STYLE"),
 		},
 	}
 

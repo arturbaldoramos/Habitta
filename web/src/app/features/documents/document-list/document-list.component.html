@@ -1,0 +1,232 @@
+<div class="document-page">
+  <!-- Sidebar: Folders -->
+  <aside class="folder-sidebar" aria-label="Pastas de documentos">
+    <div class="sidebar-header">
+      <h2 class="sidebar-title">Pastas</h2>
+      <p-button
+        icon="pi pi-plus"
+        [rounded]="true"
+        [text]="true"
+        size="small"
+        pTooltip="Nova Pasta"
+        tooltipPosition="bottom"
+        ariaLabel="Criar nova pasta"
+        (onClick)="openCreateFolderDialog()"
+      />
+    </div>
+
+    <ul class="folder-list" role="listbox" aria-label="Lista de pastas">
+      <li
+        class="folder-item"
+        [class.folder-item--active]="showAllDocuments()"
+        role="option"
+        [attr.aria-selected]="showAllDocuments()"
+        (click)="selectAllDocuments()"
+        (keydown.enter)="selectAllDocuments()"
+        tabindex="0"
+      >
+        <i class="pi pi-inbox folder-item-icon"></i>
+        <span>Todos os Documentos</span>
+      </li>
+      @for (folder of folders(); track folder.id) {
+        <li
+          class="folder-item"
+          [class.folder-item--active]="selectedFolder()?.id === folder.id"
+          role="option"
+          [attr.aria-selected]="selectedFolder()?.id === folder.id"
+          (click)="selectFolder(folder)"
+          (keydown.enter)="selectFolder(folder)"
+          tabindex="0"
+        >
+          <i class="pi pi-folder folder-item-icon"></i>
+          <span class="folder-item-name">{{ folder.name }}</span>
+          <div class="folder-item-actions">
+            <button
+              class="folder-action-btn"
+              pTooltip="Editar"
+              tooltipPosition="bottom"
+              (click)="openEditFolderDialog(folder, $event)"
+              aria-label="Editar pasta {{ folder.name }}"
+            >
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button
+              class="folder-action-btn folder-action-btn--danger"
+              pTooltip="Excluir"
+              tooltipPosition="bottom"
+              (click)="confirmDeleteFolder(folder, $event)"
+              aria-label="Excluir pasta {{ folder.name }}"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  </aside>
+
+  <!-- Main content: Documents -->
+  <main class="document-main">
+    <div class="header-section">
+      <h1 class="page-title">
+        @if (showAllDocuments()) {
+          Todos os Documentos
+        } @else {
+          {{ selectedFolder()?.name }}
+        }
+      </h1>
+      <p-button
+        label="Upload"
+        icon="pi pi-upload"
+        (onClick)="openUploadDialog()"
+      />
+    </div>
+
+    <p-table
+      [value]="documents()"
+      [loading]="loading()"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{ 'min-width': '40rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 40px"></th>
+          <th>Nome</th>
+          @if (showAllDocuments()) {
+            <th>Pasta</th>
+          }
+          <th>Tamanho</th>
+          <th>Enviado em</th>
+          <th style="width: 100px">Ações</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-doc>
+        <tr>
+          <td>
+            <i [class]="getFileIcon(doc.content_type)" class="file-icon"></i>
+          </td>
+          <td>{{ doc.original_name }}</td>
+          @if (showAllDocuments()) {
+            <td>{{ doc.folder?.name || '-' }}</td>
+          }
+          <td>{{ formatFileSize(doc.size) }}</td>
+          <td>{{ doc.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <div class="action-buttons">
+              <p-button
+                icon="pi pi-download"
+                [rounded]="true"
+                [text]="true"
+                size="small"
+                pTooltip="Baixar"
+                tooltipPosition="bottom"
+                ariaLabel="Baixar documento {{ doc.original_name }}"
+                (onClick)="downloadDocument(doc, $event)"
+              />
+              <p-button
+                icon="pi pi-trash"
+                [rounded]="true"
+                [text]="true"
+                severity="danger"
+                size="small"
+                pTooltip="Excluir"
+                tooltipPosition="bottom"
+                ariaLabel="Excluir documento {{ doc.original_name }}"
+                (onClick)="confirmDeleteDocument(doc, $event)"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="showAllDocuments() ? 6 : 5" class="text-center">
+            Nenhum documento encontrado
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </main>
+</div>
+
+<!-- Folder Dialog -->
+<p-dialog
+  [header]="folderDialogMode() === 'create' ? 'Nova Pasta' : 'Editar Pasta'"
+  [(visible)]="folderDialogVisible"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+  [closable]="true"
+>
+  <div class="dialog-form">
+    <div class="form-field">
+      <label for="folderName">Nome *</label>
+      <input
+        id="folderName"
+        type="text"
+        pInputText
+        [ngModel]="folderForm().name"
+        (ngModelChange)="folderForm.set({ ...folderForm(), name: $event })"
+        placeholder="Nome da pasta"
+        class="w-full"
+      />
+    </div>
+    <div class="form-field">
+      <label for="folderDescription">Descrição</label>
+      <textarea
+        id="folderDescription"
+        pTextarea
+        [ngModel]="folderForm().description"
+        (ngModelChange)="folderForm.set({ ...folderForm(), description: $event })"
+        placeholder="Descrição da pasta (opcional)"
+        class="w-full"
+        rows="3"
+      ></textarea>
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button
+      label="Cancelar"
+      severity="secondary"
+      [text]="true"
+      (onClick)="folderDialogVisible.set(false)"
+    />
+    <p-button
+      [label]="folderDialogMode() === 'create' ? 'Criar' : 'Salvar'"
+      (onClick)="saveFolder()"
+    />
+  </ng-template>
+</p-dialog>
+
+<!-- Upload Dialog -->
+<p-dialog
+  header="Upload de Documentos"
+  [(visible)]="uploadDialogVisible"
+  [modal]="true"
+  [style]="{ width: '500px' }"
+  [closable]="!uploading()"
+>
+  <p-fileUpload
+    name="files"
+    [multiple]="true"
+    [maxFileSize]="10485760"
+    [customUpload]="true"
+    (uploadHandler)="onFileSelect($event)"
+    [auto]="false"
+    chooseLabel="Escolher Arquivos"
+    uploadLabel="Enviar"
+    cancelLabel="Limpar"
+    [disabled]="uploading()"
+    chooseIcon="pi pi-plus"
+  >
+    <ng-template #empty>
+      <div class="upload-empty">
+        <i class="pi pi-cloud-upload upload-empty-icon"></i>
+        <p>Arraste arquivos aqui ou clique para selecionar</p>
+        <small>Máximo 10MB por arquivo</small>
+      </div>
+    </ng-template>
+  </p-fileUpload>
+</p-dialog>
+
+<p-confirmDialog />
+<p-toast />
