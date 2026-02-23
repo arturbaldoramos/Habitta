@@ -29,6 +29,7 @@ habitta/
 - **Config:** Viper (gerenciamento de configurações/env)
 - **Migrations:** golang-migrate ou GORM AutoMigrate
 - **Validação:** go-playground/validator
+- **AWS SDK:** aws-sdk-go-v2 (S3/MinIO storage)
 - **JWT:** golang-jwt/jwt
 
 **Arquitetura:**
@@ -52,6 +53,7 @@ habitta/
   - `habitta-api` - Backend Go
   - `habitta-web` - Frontend Angular (Nginx)
   - `habitta-db` - PostgreSQL 16
+  - `habitta-minio` - MinIO (S3-compatible storage para dev local)
 
 ### Ambientes
 
@@ -59,6 +61,7 @@ habitta/
 - Backend: `go run cmd/server/main.go` (porta 8080)
 - Frontend: `npm start` (porta 4200)
 - Database: PostgreSQL via Docker ou local
+- Storage: MinIO via Docker (porta 9000 API, 9001 console)
 
 **Produção (Docker):**
 - Backend: Multi-stage build com imagem Alpine
@@ -91,6 +94,8 @@ habitta/
 - `tenants` - Condomínios (clientes)
 - `users` - Usuários do sistema (síndicos, moradores, etc.)
 - `units` - Unidades (apartamentos/casas)
+- `folders` - Pastas de documentos
+- `documents` - Documentos do condomínio (metadados; arquivos no S3)
 - `bills` - Boletos para moradores
 - `expenses` - Despesas do condomínio
 - `maintenance_requests` - Chamados de manutenção
@@ -101,6 +106,10 @@ habitta/
 ### Relacionamentos Críticos
 - `tenant` 1:N `users`
 - `tenant` 1:N `units`
+- `tenant` 1:N `folders`
+- `tenant` 1:N `documents`
+- `folder` 1:N `documents`
+- `user` 1:N `documents` (uploaded_by)
 - `unit` 1:N `users` (morador, proprietário, inquilino)
 - `user` 1:N `maintenance_requests`
 - `unit` 1:N `bills`
@@ -112,17 +121,24 @@ habitta/
 - [x] CRUD de condomínios (tenants)
 - [x] CRUD de usuários (com roles: admin, sindico, morador)
 - [x] CRUD de unidades
+- [x] Sistema de convites por email
+- [x] Gestão de documentos (upload/download via S3, pastas)
+- [x] Minha Conta (perfil e senha)
 - [ ] Geração de boletos (integração futura)
 - [ ] Gestão financeira básica
 - [ ] Chamados de manutenção
 - [ ] Comunicados
 
 ### Frontend
-- [ ] Tela de login
-- [ ] Dashboard do síndico
-- [ ] Cadastro de condomínio (onboarding)
-- [ ] Gestão de moradores
-- [ ] Gestão de unidades
+- [x] Tela de login
+- [x] Tela de registro
+- [x] Dashboard do síndico
+- [x] Cadastro de condomínio (onboarding)
+- [x] Gestão de moradores
+- [x] Gestão de unidades
+- [x] Sistema de convites
+- [x] Gestão de documentos (upload, pastas, download)
+- [x] Minha Conta (perfil e senha)
 - [ ] Lista de boletos
 - [ ] Abertura de chamados
 

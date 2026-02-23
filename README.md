@@ -7,6 +7,7 @@ Plataforma completa para gestão de condomínios residenciais e comerciais.
 - **Backend:** Go 1.25 + Gin + GORM + PostgreSQL
 - **Frontend:** Angular 21 + TailwindCSS + PrimeNG
 - **Database:** PostgreSQL 16
+- **Storage:** Amazon S3 (MinIO para dev local)
 - **Deploy:** Docker + Docker Compose
 
 ## 📁 Estrutura do Projeto
@@ -52,6 +53,7 @@ docker-compose down
 - Frontend: http://localhost
 - Backend API: http://localhost:8080
 - Database: localhost:5432
+- MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
 
 ### Opção 2: Desenvolvimento Local (Com Hot Reload)
 
@@ -130,18 +132,24 @@ Frontend disponível em: http://localhost:4200
 
 ### Serviços
 
-O `docker-compose.yml` orquestra 3 serviços:
+O `docker-compose.yml` orquestra 4 serviços:
 
 1. **habitta-db** - PostgreSQL 16
    - Porta: 5432
    - Volume persistente: `postgres_data`
 
-2. **habitta-api** - Backend Go
+2. **habitta-minio** - MinIO (S3-compatible storage)
+   - Porta API: 9000
+   - Porta Console: 9001
+   - Volume persistente: `minio_data`
+   - Credenciais: minioadmin/minioadmin
+
+3. **habitta-api** - Backend Go
    - Porta: 8080
    - Health check: GET /health
    - Aguarda database estar pronto
 
-3. **habitta-web** - Frontend Angular + Nginx
+4. **habitta-web** - Frontend Angular + Nginx
    - Porta: 80
    - Proxy reverso para API (/api → habitta-api:8080)
    - Health check: GET /health
@@ -288,6 +296,7 @@ curl -X GET http://localhost:8080/api/users \
 - Gin (web framework)
 - GORM (ORM)
 - PostgreSQL 16
+- AWS SDK v2 (S3/MinIO storage)
 - JWT (autenticação)
 - Bcrypt (hash de senhas)
 - Viper (config)
@@ -303,6 +312,7 @@ curl -X GET http://localhost:8080/api/users \
 - Docker
 - Docker Compose
 - Nginx
+- MinIO (S3 local para desenvolvimento)
 - Multi-stage builds
 
 ## 📄 Licença

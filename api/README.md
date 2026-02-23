@@ -14,6 +14,7 @@ API REST multi-tenant construída com Clean Architecture para gestão completa d
 - **Viper** - Gerenciamento de configurações
 - **JWT** - Autenticação stateless
 - **Bcrypt** - Hash de senhas
+- **AWS SDK v2** - Storage S3/MinIO (documentos)
 - **Resend** - Envio de emails (staging/produção)
 
 ### Arquitetura
@@ -87,9 +88,19 @@ ALLOWED_ORIGINS=http://localhost:4200,http://localhost:3000
 RESEND_API_KEY=re_your_api_key_here
 EMAIL_FROM=noreply@habitta.com
 APP_BASE_URL=http://localhost:4200
+
+# Storage (S3/MinIO)
+S3_ENDPOINT=http://localhost:9000
+S3_BUCKET=habitta-local
+S3_REGION=us-east-1
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_USE_PATH_STYLE=true
 ```
 
 > **Nota:** `RESEND_API_KEY` é obrigatória em ambientes que não sejam `development`. Em `development`, os emails são apenas logados no console.
+
+> **Storage:** Em desenvolvimento, o MinIO simula o S3 localmente. Em produção, configure as variáveis `S3_*` para apontar para buckets AWS reais e defina `S3_USE_PATH_STYLE=false`.
 
 ### Database Setup
 
@@ -124,7 +135,7 @@ api/
 │   ├── middleware/              # JWT, Tenant, CORS, Logger
 │   ├── models/                  # GORM models
 │   ├── repositories/            # Data access layer
-│   └── services/                # Business logic (inclui email_service)
+│   └── services/                # Business logic (email, storage, folders, documents)
 ├── pkg/
 │   └── utils/                   # Helpers (JWT, bcrypt)
 ├── .env                         # Environment variables
@@ -500,6 +511,132 @@ Authorization: Bearer <token>
 
 ---
 
+### Pastas (Síndico/Admin Only, Tenant Isolated)
+
+**Requer:** Token JWT com `role: sindico` ou `admin` + tenant ativo
+
+#### Criar Pasta
+
+```bash
+POST /api/folders
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Atas de Reunião",
+  "description": "Atas das reuniões do condomínio"
+}
+```
+
+#### Listar Pastas
+
+```bash
+GET /api/folders
+Authorization: Bearer <token>
+```
+
+#### Atualizar Pasta
+
+```bash
+PUT /api/folders/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Atas",
+  "description": "Atas e documentos de reuniões"
+}
+```
+
+#### Deletar Pasta
+
+```bash
+DELETE /api/folders/:id
+Authorization: Bearer <token>
+```
+
+---
+
+### Documentos (Síndico/Admin Only, Tenant Isolated)
+
+**Requer:** Token JWT com `role: sindico` ou `admin` + tenant ativo
+
+Arquivos são armazenados no S3 (MinIO em dev local). Limite de 10MB por arquivo.
+
+#### Upload de Documento
+
+```bash
+POST /api/documents/upload
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+# Campos:
+# - file (obrigatório): arquivo a ser enviado
+# - folder_id (opcional): ID da pasta
+```
+
+#### Listar Documentos
+
+```bash
+# Todos os documentos do tenant
+GET /api/documents
+Authorization: Bearer <token>
+
+# Filtrar por pasta
+GET /api/documents?folder_id=1
+Authorization: Bearer <token>
+```
+
+#### Detalhes do Documento
+
+```bash
+GET /api/documents/:id
+Authorization: Bearer <token>
+```
+
+#### Download (URL Presigned)
+
+```bash
+GET /api/documents/:id/download
+Authorization: Bearer <token>
+```
+
+Resposta (200 OK):
+```json
+{
+  "data": {
+    "url": "http://localhost:9000/habitta-local/tenants/1/documents/uuid/file.pdf?X-Amz-..."
+  }
+}
+```
+
+A URL presigned expira em 15 minutos.
+
+#### Deletar Documento
+
+```bash
+DELETE /api/documents/:id
+Authorization: Bearer <token>
+```
+
+Remove o arquivo do S3 e o registro do banco.
+
+#### Mover Documento para Outra Pasta
+
+```bash
+PATCH /api/documents/:id/move
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "folder_id": 2
+}
+```
+
+Envie `"folder_id": null` para mover para "Sem Pasta".
+
+---
+
 ## 🔐 Autenticação e Autorização
 
 ### JWT Token
@@ -594,10 +731,14 @@ As migrations são executadas automaticamente ao iniciar o servidor. Os seguinte
 - **user_tenants** - Relação many-to-many entre users e tenants (com role)
 - **invites** - Convites para tenants
 - **units** - Unidades (com tenant_id)
+- **folders** - Pastas de documentos (com tenant_id)
+- **documents** - Documentos/arquivos (metadados; arquivos no S3)
 
 Para forçar recriação das tabelas (apenas desenvolvimento):
 
 ```sql
+DROP TABLE IF EXISTS documents CASCADE;
+DROP TABLE IF EXISTS folders CASCADE;
 DROP TABLE IF EXISTS invites CASCADE;
 DROP TABLE IF EXISTS user_tenants CASCADE;
 DROP TABLE IF EXISTS units CASCADE;
